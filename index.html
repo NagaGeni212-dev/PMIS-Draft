@@ -105,7 +105,7 @@
         .contract-table td { font-weight: bold; font-size: 12px; }
         .pm-box { text-align: center; font-size: 11px; border-top: 1px solid #EEE; padding-top: 8px; margin-bottom: 8px; }
         .pm-name { color: var(--primary-red); font-weight: bold; font-size: 12px; }
-        .btn-document { background: #0056b3; color: white; text-align: center; padding: 6px; font-size: 11px; font-weight: bold; border-radius: 3px; text-decoration: none; display: block; margin: 4px 0; cursor: pointer; }
+        .btn-document { background: #0056b3; color: white; text-align: center; padding: 6px; font-size: 11px; font-weight: bold; border-radius: 3px; text-decoration: none; display: block; margin: 4px 0; }
         
         .countdown-title { text-align: center; font-size: 11px; font-weight: bold; color: #444; margin-top: auto; margin-bottom: 4px; padding-top: 10px; }
         .countdown-box { background: #333; color: #FFC000; font-family: 'Courier New', Courier, monospace; font-size: 16px; text-align: center; padding: 8px; letter-spacing: 0.5px; font-weight: bold; border-radius: 3px; }
@@ -368,6 +368,7 @@
             DEMO_DATA: {
                 ContractValue: 'Rp 500 Miliar',
                 ContractDuration: '24 Bulan',
+                TargetFinish: '2026-12-31', // Format: YYYY-MM-DD
                 ProgressSummary: '85.5%',
                 SPI: '1.02',
                 EPI: '0.95',
@@ -401,10 +402,28 @@
         });
 
         // ===== COUNTDOWN TIMER =====
-        function initCountdown() {
-            const targetDate = new Date();
-            targetDate.setDate(targetDate.getDate() + 226);
-            targetDate.setHours(24, 0, 0, 0); 
+        function initCountdown(targetFinishDate = null) {
+            let targetDate;
+            
+            if (targetFinishDate) {
+                // Parse the target finish date from spreadsheet (format: YYYY-MM-DD or similar)
+                targetDate = new Date(targetFinishDate);
+                log(`📅 Using TargetFinish from spreadsheet: ${targetFinishDate}`, 'info');
+                
+                // Validate the date
+                if (isNaN(targetDate.getTime())) {
+                    log(`⚠️ Invalid TargetFinish date: ${targetFinishDate}, using fallback...`, 'warn');
+                    targetDate = new Date();
+                    targetDate.setDate(targetDate.getDate() + 226);
+                }
+            } else {
+                // Fallback to 226 days from now if no target date provided
+                targetDate = new Date();
+                targetDate.setDate(targetDate.getDate() + 226);
+                log('📅 Using fallback countdown (226 days)', 'info');
+            }
+            
+            targetDate.setHours(23, 59, 59, 999); 
 
             const countdownElement = document.getElementById('countdown');
 
@@ -522,6 +541,12 @@
                     }
                 }
 
+                // Update countdown with TargetFinish from spreadsheet
+                if (row['TargetFinish']) {
+                    log(`Reinitializing countdown with TargetFinish: ${row['TargetFinish']}`, 'info');
+                    initCountdown(row['TargetFinish']);
+                }
+
                 log(`✅ Updated ${updatedCount}/${Object.keys(fieldsToUpdate).length} fields`, 'success');
             } catch (error) {
                 log(`Error updating dashboard: ${error.message}`, 'error');
@@ -542,7 +567,9 @@
         // ===== INITIALIZATION =====
         window.addEventListener('load', () => {
             log('🔄 Window loaded, initializing...', 'info');
-            initCountdown();
+            
+            // Initialize countdown with demo data first (will be updated when real data arrives)
+            initCountdown(CONFIG.DEMO_DATA.TargetFinish);
             
             // Delay slightly to ensure DOM is ready
             setTimeout(fetchDashboardData, 500);
