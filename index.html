@@ -535,6 +535,30 @@
                 log('Using demo data...', 'warn');
                 updateDashboard(CONFIG.DEMO_DATA);
             }
+            if(data.ProgressSummary) {
+    // 1. Update teks angka di tengah lingkaran
+    document.getElementById('val-progress').innerText = data.ProgressSummary;
+    
+    // 2. Pembersihan Format Angka (Sangat Penting!)
+    // Hapus tanda '%', spasi, dan ganti koma (,) menjadi titik (.)
+    let cleanValue = data.ProgressSummary.replace('%', '').replace(',', '.').trim();
+    let progressNum = parseFloat(cleanValue);
+
+    // 3. Update Grafik (Porsi Warna)
+    if(!isNaN(progressNum)) {
+        const circleElement = document.getElementById('circle-gradient');
+        
+        // Mengubah warna: Hijau (#00FF00) sesuai persentase, sisanya Abu-abu gelap (#444)
+        circleElement.style.background = `conic-gradient(#00FF00 ${progressNum}%, #444 0)`;
+        
+        // Opsional: Jika Anda ingin warnanya berubah jadi merah kalau progress di bawah 50%
+        // if(progressNum < 50) {
+        //     circleElement.style.background = `conic-gradient(#FF0000 ${progressNum}%, #444 0)`;
+        // }
+    } else {
+        console.warn("Gagal membaca nilai Progress Summary:", data.ProgressSummary);
+    }
+}
         }
 
         // ===== UPDATE DASHBOARD =====
