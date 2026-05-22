@@ -3,117 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PMIS Tol IKN - Live Dashboard</title>
+    <title>PMIS - Proyek Tol IKN (Dynamic Data)</title>
     <link href="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.css" rel="stylesheet" />
-    <style>
-        :root { --primary-red: #8B0000; --dark-blue: #002060; --light-bg: #F2F2F2; --card-gray: #E6E6E6; }
-        
-        /* Layout Full Screen Tanpa Scroll Utama */
-        html, body { margin: 0; padding: 0; width: 100%; height: 100vh; font-family: 'Segoe UI', sans-serif; background-color: var(--light-bg); overflow: hidden; display: flex; flex-direction: column; }
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
-        header { background-color: var(--primary-red); color: white; padding: 5px 20px; display: flex; justify-content: space-between; align-items: center; height: 45px; border-bottom: 3px solid #FFC000; }
-        .sub-nav { background: white; display: flex; justify-content: space-around; padding: 5px; font-size: 11px; font-weight: 600; border-bottom: 1px solid #CCC; height: 25px; }
+    <style>
+        :root {
+            --primary-red: #8B0000;
+            --dark-blue: #002060;
+            --light-bg: #F2F2F2;
+            --card-gray: #E6E6E6;
+        }
+
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--light-bg); overflow-x: hidden; }
+
+        header { background-color: var(--primary-red); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #FFC000; }
+        .logo-placeholder { font-weight: bold; font-size: 24px; border: 2px solid white; padding: 2px 10px; }
         
-        .dashboard-container { display: grid; grid-template-columns: 240px 1fr 270px; gap: 8px; padding: 8px; flex: 1; min-height: 0; box-sizing: border-box; }
-        .column { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
-        .card { background: white; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 8px; display: flex; flex-direction: column; min-height: 0; }
+        .dashboard-container { display: grid; grid-template-columns: 240px 1fr 260px; gap: 12px; padding: 12px; }
+        .card { background: white; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); padding: 10px; margin-bottom: 12px; }
+        .card-header { background: var(--primary-red); color: white; text-align: center; font-size: 11px; font-weight: bold; padding: 6px; margin: -10px -10px 10px -10px; border-radius: 4px 4px 0 0; }
         
-        .card-header { background: var(--primary-red); color: white; text-align: center; font-size: 10px; font-weight: bold; padding: 4px; margin: -8px -8px 6px -8px; }
-        .grid-value { font-weight: bold; font-size: 14px; text-align: center; color: #333; margin: 5px 0; }
-        .countdown-title { text-align: center; font-size: 10px; font-weight: bold; color: #555; }
-        .countdown-box { background: #333; color: #FFC000; font-family: monospace; font-size: 15px; text-align: center; padding: 6px; border-radius: 4px; font-weight: bold; }
+        .grid-value { background: var(--card-gray); font-weight: bold; padding: 5px; border-radius: 3px; font-size: 11px; text-align: center; }
+        .red-text { color: red; }
         
-        .mini-map-container { position: relative; width: 100%; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 4px; }
-        .mini-map-container iframe { position: absolute; width: 100%; height: 100%; border: 0; }
+        #map { height: 400px; width: 100%; border-radius: 4px; }
         
-        .map-section { flex: 1; position: relative; background: #9cd3db; border-radius: 4px; overflow: hidden; }
-        #map { width: 100%; height: 100%; }
-        
-        .qhsse-val { font-weight: bold; color: red; font-size: 14px; }
-        @media (max-width: 1024px) { .dashboard-container { grid-template-columns: 1fr; overflow-y: auto; } }
+        @media (max-width: 1024px) { .dashboard-container { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
-<header>
-    <div><strong>PMIS PROYEK TOL IKN</strong></div>
-    <div style="font-size: 11px;">BIM 360 Dashboard</div>
-</header>
-<div class="sub-nav">
-    <div class="active">Home</div><div>Progress Monitoring</div><div>3D View</div>
-</div>
+    <header>
+        <div><strong>PMIS</strong> | PROYEK TOL IKN</div>
+    </header>
 
-<div class="dashboard-container">
-    <div class="column">
-        <div class="card">
-            <div class="card-header">Project Information</div>
-            <div id="ContractValue" class="grid-value">Loading...</div>
-            <div class="countdown-title">Sisa Waktu Pekerjaan</div>
-            <div id="countdown" class="countdown-box">000 Hari 00:00:00</div>
+    <div class="dashboard-container">
+        <div class="column">
+            <div class="card">
+                <div class="card-header">Project Information</div>
+                <div>Contract Value: <div id="contract-value" class="grid-value">Loading...</div></div>
+            </div>
         </div>
-        <div class="card" style="padding:0;">
-            <div class="mini-map-container">
-                <iframe src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d31915.22851410118!2d116.6856!3d-1.1274!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2df146e5015b600d%3A0x6e2ef3f24bf7123!2sJembatan%20Pulau%20Balang!5e1!3m2!1sid!2sid!4v1716123456789!5m2!1sid!2sid&t=k" allowfullscreen="" loading="lazy"></iframe>
+
+        <div class="column">
+            <div id="map"></div>
+        </div>
+
+        <div class="column">
+            <div class="card">
+                <div class="card-header">Overview Finansial</div>
+                <div>Real Progress: <div id="real-progress" class="grid-value red-text">Loading...</div></div>
             </div>
         </div>
     </div>
 
-    <div class="center-column" style="display:flex; flex-direction:column; min-height:0;">
-        <div class="map-section"><div id="map"></div></div>
-    </div>
+    <script src="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.js"></script>
+    <script>
+        // GANTI URL INI DENGAN URL CSV PUBLIK GOOGLE SHEET ANDA
+        const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vREOK2Wi_FWuc8XGV2cX_J94ez_cjFH6oeI40pqasgpN20PP-wlWwtbmn6DQmXk1AVdjmW1VeKVCOvc/pub?output=csv';
 
-    <div class="column">
-        <div class="card">
-            <div class="card-header">QHSSE</div>
-            <div style="display:flex; justify-content:space-between; text-align:center; padding-top:10px;">
-                <div>NC<div id="NC" class="qhsse-val">0</div></div>
-                <div>Nearmiss<div id="Nearmiss" class="qhsse-val">0</div></div>
-                <div>Fatality<div id="Fatality" class="qhsse-val">0</div></div>
-            </div>
-        </div>
-    </div>
-</div>
+        async function updateData() {
+            try {
+                const response = await fetch(sheetUrl);
+                const csvText = await response.text();
 
-<script src="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.js"></script>
-<script>
-    // 1. Inisialisasi Map
-    const map = new maplibregl.Map({
-        container: 'map',
-        style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
-        center: [116.6856, -1.1274], zoom: 13, pitch: 50, antialias: true
-    });
+                Papa.parse(csvText, {
+                    header: true,
+                    complete: function(results) {
+                        const row = results.data[0]; // Mengambil baris pertama
+                        
+                        // Update elemen HTML berdasarkan nama kolom di Google Sheet
+                        if(row.ContractValue) document.getElementById('contract-value').innerText = row.ContractValue;
+                        if(row.RealProgress) document.getElementById('real-progress').innerText = row.RealProgress;
+                        
+                        console.log("Data diperbarui dari Sheet:", row);
+                    }
+                });
+            } catch (err) {
+                console.error("Gagal mengambil data:", err);
+            }
+        }
 
-    // 2. Fetch Google Sheets (CSV)
-    async function updateData() {
-        const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vREOK2Wi_FWuc8XGV2cX_J94ez_cjFH6oeI40pqasgpN20PP-wlWwtbmn6DQmXk1AVdjmW1VeKVCOvc/pub?output=csv';
-        try {
-            const res = await fetch(csvUrl);
-            const data = await res.text();
-            const rows = data.split('\n');
-            rows.forEach((row, index) => {
-                if (index === 0) return; // Lewati header
-                const cols = row.split(',');
-                if (cols.length >= 2) {
-                    const el = document.getElementById(cols[0].trim());
-                    if (el) el.innerText = cols[1].trim();
-                }
-            });
-        } catch(e) { console.error("Error load data"); }
-    }
+        // Inisialisasi Peta
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
+            center: [116.6856, -1.1274],
+            zoom: 13
+        });
 
-    // 3. Countdown Timer
-    function startCountdown() {
-        const target = new Date(); target.setDate(target.getDate() + 226); target.setHours(24,0,0,0);
-        setInterval(() => {
-            const now = new Date().getTime(), dist = target - now;
-            const d = Math.floor(dist/(1000*60*60*24)), h = Math.floor((dist%(1000*60*60*24))/(1000*60*60));
-            const m = Math.floor((dist%(1000*60*60))/(1000*60)), s = Math.floor((dist%(1000*60))/1000);
-            document.getElementById('countdown').innerHTML = `${String(d).padStart(3,'0')} Hari ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-        }, 1000);
-    }
-
-    updateData();
-    startCountdown();
-</script>
+        // Jalankan saat load
+        window.onload = updateData;
+    </script>
 </body>
 </html>
