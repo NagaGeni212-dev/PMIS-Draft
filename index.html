@@ -386,6 +386,13 @@
             }
         };
 
+        // ===== COUNTDOWN STATE MANAGEMENT =====
+        let countdownState = {
+            intervalId: null,
+            currentTargetDate: null,
+            countdownStarted: false
+        };
+
         // ===== MAP INITIALIZATION =====
         const map = new maplibregl.Map({
             container: 'map',
@@ -423,7 +430,25 @@
                 log('📅 Using fallback countdown (226 days)', 'info');
             }
             
-            targetDate.setHours(23, 59, 59, 999); 
+            targetDate.setHours(23, 59, 59, 999);
+            
+            // Check if countdown is already running with the same target date
+            if (countdownState.countdownStarted && 
+                countdownState.currentTargetDate && 
+                countdownState.currentTargetDate.getTime() === targetDate.getTime()) {
+                log('⏸️ Countdown already running with same target date, skipping reinitialize', 'warn');
+                return;
+            }
+            
+            // Clear existing interval if any
+            if (countdownState.intervalId !== null) {
+                clearInterval(countdownState.intervalId);
+                log('🛑 Cleared previous countdown interval', 'info');
+            }
+            
+            // Store the current target date
+            countdownState.currentTargetDate = targetDate;
+            countdownState.countdownStarted = true;
 
             const countdownElement = document.getElementById('countdown');
 
@@ -433,7 +458,8 @@
 
                 if (distance < 0) {
                     countdownElement.innerHTML = "PROYEK SELESAI";
-                    clearInterval(intervalId);
+                    clearInterval(countdownState.intervalId);
+                    countdownState.countdownStarted = false;
                     return;
                 }
 
@@ -451,7 +477,8 @@
             }
 
             updateCountdown();
-            const intervalId = setInterval(updateCountdown, 1000);
+            countdownState.intervalId = setInterval(updateCountdown, 1000);
+            log('✅ Countdown initialized and running', 'success');
         }
 
         // ===== FETCH WITH TIMEOUT =====
@@ -541,9 +568,9 @@
                     }
                 }
 
-                // Update countdown with TargetFinish from spreadsheet
+                // Update countdown with TargetFinish from spreadsheet (only if different from current)
                 if (row['TargetFinish']) {
-                    log(`Reinitializing countdown with TargetFinish: ${row['TargetFinish']}`, 'info');
+                    log(`Updating countdown with TargetFinish: ${row['TargetFinish']}`, 'info');
                     initCountdown(row['TargetFinish']);
                 }
 
@@ -568,7 +595,7 @@
         window.addEventListener('load', () => {
             log('🔄 Window loaded, initializing...', 'info');
             
-            // Initialize countdown with demo data first (will be updated when real data arrives)
+            // Initialize countdown with demo data
             initCountdown(CONFIG.DEMO_DATA.TargetFinish);
             
             // Delay slightly to ensure DOM is ready
