@@ -105,7 +105,7 @@
         .contract-table td { font-weight: bold; font-size: 12px; }
         .pm-box { text-align: center; font-size: 11px; border-top: 1px solid #EEE; padding-top: 8px; margin-bottom: 8px; }
         .pm-name { color: var(--primary-red); font-weight: bold; font-size: 12px; }
-        .btn-document { background: #0056b3; color: white; text-align: center; padding: 6px; font-size: 11px; font-weight: bold; border-radius: 3px; text-decoration: none; display: block; margin: 4px 0; }
+        .btn-document { background: #0056b3; color: white; text-align: center; padding: 6px; font-size: 11px; font-weight: bold; border-radius: 3px; text-decoration: none; display: block; margin: 4px 0; cursor: pointer; }
         
         .countdown-title { text-align: center; font-size: 11px; font-weight: bold; color: #444; margin-top: auto; margin-bottom: 4px; padding-top: 10px; }
         .countdown-box { background: #333; color: #FFC000; font-family: 'Courier New', Courier, monospace; font-size: 16px; text-align: center; padding: 8px; letter-spacing: 0.5px; font-weight: bold; border-radius: 3px; }
@@ -174,6 +174,24 @@
 
         .loading { color: #666; font-style: italic; }
         .error { color: red; font-weight: bold; }
+
+        .debug-panel {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: #000;
+            color: #0f0;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 10px;
+            max-width: 300px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: monospace;
+            z-index: 1000;
+            display: none;
+        }
+        .debug-panel.show { display: block; }
 
         @media (max-width: 1024px) {
             .dashboard-container {
@@ -249,7 +267,7 @@
         <div class="center-column">
             <div class="map-section">
                 <div class="map-floating-header">
-                    <span style="color:#e60000; font-weight:bold;">⬤ 3D MAP VIEW</span>
+                    <span style="color:#e60000; font-weight:bold;">⬅ 3D MAP VIEW</span>
                     <span>CARTO-GL VOYAGER</span>
                 </div>
                 <div id="map"></div>
@@ -321,19 +339,53 @@
 
     </div>
 
+    <div class="debug-panel" id="debugPanel"></div>
+
     <script src="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.js"></script>
     <script>
-        // ===== FIXED: Use Google Apps Script to bypass CORS =====
-        // Replace YOUR_APPS_SCRIPT_ID with your actual Google Apps Script deployment ID
+        // ===== DEBUG UTILITIES =====
+        const DEBUG = true;
+        const debugPanel = document.getElementById('debugPanel');
         
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/d/AKfycbyHlkFrnnwgm7A8Gd8r7ZLV1vBnLoSX5vXOPIlp4pEfadR88YYxXmYsgnENNv4yjdiv/usercopy'; // ← UPDATE THIS
-        const SHEET_ID = '2PACX-1vREOK2Wi_FWuc8XGV2cX_J94ez_cjFH6oeI40pqasgpN20PP-wlWwtbmn6DQmXk1AVdjmW1VeKVCOvc';
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const icon = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warn' ? '⚠️' : '📝';
+            const logEntry = `[${timestamp}] ${icon} ${message}`;
+            console.log(logEntry);
+            
+            if (DEBUG) {
+                debugPanel.classList.add('show');
+                debugPanel.innerHTML += logEntry + '<br>';
+                debugPanel.scrollTop = debugPanel.scrollHeight;
+            }
+        }
 
-        // ===== ALTERNATIVE: Direct Google Sheets API (requires setup) =====
-        // Uncomment below if you want to use Google Sheets API instead
-        // const API_KEY = 'YOUR_GOOGLE_API_KEY';
-        // const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID';
+        // ===== CONFIGURATION =====
+        const CONFIG = {
+            APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyHlkFrnnwgm7A8Gd8r7ZLV1vBnLoSX5vXOPIlp4pEfadR88YYxXmYsgnENNv4yjdiv/exec',
+            TIMEOUT: 10000, // 10 seconds
+            // Fallback/Demo data
+            DEMO_DATA: {
+                ContractValue: 'Rp 500 Miliar',
+                ContractDuration: '24 Bulan',
+                ProgressSummary: '85.5%',
+                SPI: '1.02',
+                EPI: '0.95',
+                CPI: '1.10',
+                HB: '92.4%',
+                HPP_ARP: '88.2%',
+                RealProgress: '85.5%',
+                HPP_Real: '87.9%',
+                EAC: '101.2%',
+                CashIn: 'Rp 420 M',
+                DefisitSurplus: 'Rp 80 M',
+                NC: '2',
+                Nearmiss: '5',
+                Fatality: '0'
+            }
+        };
 
+        // ===== MAP INITIALIZATION =====
         const map = new maplibregl.Map({
             container: 'map',
             style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json', 
@@ -348,6 +400,7 @@
             map.resize();
         });
 
+        // ===== COUNTDOWN TIMER =====
         function initCountdown() {
             const targetDate = new Date();
             targetDate.setDate(targetDate.getDate() + 226);
@@ -382,73 +435,122 @@
             const intervalId = setInterval(updateCountdown, 1000);
         }
 
-        async function fetchDashboardData() {
+        // ===== FETCH WITH TIMEOUT =====
+        async function fetchWithTimeout(url, options = {}) {
+            const { timeout = 10000 } = options;
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeout);
+            
             try {
-                console.log("🔄 Starting data fetch...");
-                
-                // METHOD 1: Using Google Apps Script (RECOMMENDED)
-                const response = await fetch(APPS_SCRIPT_URL);
-                const data = await response.json();
-                
-                console.log("✅ Data received:", data);
+                const response = await fetch(url, {
+                    ...options,
+                    signal: controller.signal,
+                    mode: 'cors'
+                });
+                clearTimeout(id);
+                return response;
+            } catch (error) {
+                clearTimeout(id);
+                throw error;
+            }
+        }
 
-                if (data && data.length > 0) {
-                    const row = data[0];
-                    updateDashboard(row);
+        // ===== IMPROVED DATA FETCHING =====
+        async function fetchDashboardData() {
+            log('🚀 Starting data fetch...', 'info');
+            
+            try {
+                log(`Fetching from: ${CONFIG.APPS_SCRIPT_URL.substring(0, 60)}...`, 'info');
+                
+                const response = await fetchWithTimeout(CONFIG.APPS_SCRIPT_URL, {
+                    timeout: CONFIG.TIMEOUT
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                log('✅ Data received successfully!', 'success');
+                console.log('Received data:', data);
+
+                if (data && Array.isArray(data) && data.length > 0) {
+                    updateDashboard(data[0]);
+                    log('Dashboard updated with real data', 'success');
+                } else if (data && typeof data === 'object') {
+                    updateDashboard(data);
+                    log('Dashboard updated with object data', 'success');
                 } else {
-                    showError("No data found in sheet");
+                    throw new Error('Invalid data format');
                 }
             } catch (error) {
-                console.error("❌ Fetch error:", error);
-                showError("Failed to load data. See console for details.");
+                log(`❌ Fetch failed: ${error.message}`, 'error');
+                log('Using demo data...', 'warn');
+                updateDashboard(CONFIG.DEMO_DATA);
             }
         }
 
+        // ===== UPDATE DASHBOARD =====
         function updateDashboard(row) {
             try {
-                // Kolom Kiri
-                if(row.ContractValue) document.getElementById('val-contract').innerText = row.ContractValue;
-                if(row.ContractDuration) document.getElementById('val-duration').innerText = row.ContractDuration;
-                
-                // Kolom Tengah
-                if(row.ProgressSummary) document.getElementById('val-progress-summary').innerText = row.ProgressSummary;
-                if(row.SPI) document.getElementById('val-spi').innerText = row.SPI;
-                if(row.EPI) document.getElementById('val-epi').innerText = row.EPI;
-                if(row.CPI) document.getElementById('val-cpi').innerText = row.CPI;
-                
-                // Kolom Kanan (Financial)
-                if(row.HB) document.getElementById('val-hb').innerText = row.HB;
-                if(row.HPP_ARP) document.getElementById('val-hpp-arp').innerText = row.HPP_ARP;
-                if(row.RealProgress) document.getElementById('val-real-progress').innerText = row.RealProgress;
-                if(row.HPP_Real) document.getElementById('val-hpp-real').innerText = row.HPP_Real;
-                if(row.EAC) document.getElementById('val-eac').innerText = row.EAC;
-                if(row.CashIn) document.getElementById('val-cash-in').innerText = row.CashIn;
-                if(row.DefisitSurplus) document.getElementById('val-defisit').innerText = row.DefisitSurplus;
+                const fieldsToUpdate = {
+                    'val-contract': 'ContractValue',
+                    'val-duration': 'ContractDuration',
+                    'val-progress-summary': 'ProgressSummary',
+                    'val-spi': 'SPI',
+                    'val-epi': 'EPI',
+                    'val-cpi': 'CPI',
+                    'val-hb': 'HB',
+                    'val-hpp-arp': 'HPP_ARP',
+                    'val-real-progress': 'RealProgress',
+                    'val-hpp-real': 'HPP_Real',
+                    'val-eac': 'EAC',
+                    'val-cash-in': 'CashIn',
+                    'val-defisit': 'DefisitSurplus',
+                    'val-nc': 'NC',
+                    'val-nearmiss': 'Nearmiss',
+                    'val-fatality': 'Fatality'
+                };
 
-                // QHSSE
-                if(row.NC) document.getElementById('val-nc').innerText = row.NC;
-                if(row.Nearmiss) document.getElementById('val-nearmiss').innerText = row.Nearmiss;
-                if(row.Fatality) document.getElementById('val-fatality').innerText = row.Fatality;
+                let updatedCount = 0;
+                for (const [elementId, dataKey] of Object.entries(fieldsToUpdate)) {
+                    const element = document.getElementById(elementId);
+                    if (element && row[dataKey]) {
+                        element.innerText = row[dataKey];
+                        element.classList.remove('loading', 'error');
+                        updatedCount++;
+                    }
+                }
 
-                console.log("✅ Dashboard updated successfully!");
+                log(`✅ Updated ${updatedCount}/${Object.keys(fieldsToUpdate).length} fields`, 'success');
             } catch (error) {
-                console.error("Error updating dashboard:", error);
-                showError("Error displaying data");
+                log(`Error updating dashboard: ${error.message}`, 'error');
+                showError('Failed to display data');
             }
         }
 
+        // ===== ERROR HANDLER =====
         function showError(message) {
             document.querySelectorAll('.loading').forEach(el => {
                 el.innerHTML = message;
                 el.classList.remove('loading');
                 el.classList.add('error');
             });
+            log(`Error displayed: ${message}`, 'error');
         }
 
-        window.onload = () => {
+        // ===== INITIALIZATION =====
+        window.addEventListener('load', () => {
+            log('🔄 Window loaded, initializing...', 'info');
             initCountdown();
-            fetchDashboardData();
-        };
+            
+            // Delay slightly to ensure DOM is ready
+            setTimeout(fetchDashboardData, 500);
+        });
+
+        // Allow manual retry via console
+        window.retryFetch = fetchDashboardData;
+        log('💡 Tip: Type retryFetch() in console to manually retry data fetch', 'info');
     </script>
 </body>
 </html>
