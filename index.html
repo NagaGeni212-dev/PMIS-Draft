@@ -6,8 +6,6 @@
     <title>PMIS - Proyek Tol IKN (Dynamic Scrolling Page)</title>
     <link href="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.css" rel="stylesheet" />
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    
     <style>
         :root {
             --primary-red: #8B0000;
@@ -16,7 +14,6 @@
             --card-gray: #E6E6E6;
         }
 
-        /* MENGIZINKAN HALAMAN UNTUK SCROLL MEMANJANG KE BAWAH */
         body {
             margin: 0;
             padding: 0;
@@ -25,7 +22,7 @@
             color: #333;
             box-sizing: border-box;
             overflow-x: hidden;
-            overflow-y: auto; /* Scroll utama aktif kembali */
+            overflow-y: auto; 
         }
 
         /* HEADER UTAMA */
@@ -64,22 +61,18 @@
         .sub-nav div { cursor: pointer; color: #555; padding: 2px 5px; }
         .sub-nav div.active { color: black; border-bottom: 2px solid var(--primary-red); }
 
-        /* ARSITEKTUR LAYOUT GRID MENGGUNAKAN TINGGI OTOMATIS (AUTO-STRETCH) */
+        /* ARSITEKTUR LAYOUT GRID */
         .dashboard-container {
             display: grid;
             grid-template-columns: minmax(240px, 1.2fr) minmax(400px, 4fr) minmax(260px, 1.3fr);
             gap: 12px;
             padding: 12px;
-            height: auto; /* Tinggi otomatis agar bisa memanjang ke bawah */
+            height: auto; 
             box-sizing: border-box;
         }
 
         /* STRUKTUR KOLOM */
-        .column { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 12px; 
-        }
+        .column { display: flex; flex-direction: column; gap: 12px; }
         
         /* CARD KOMPONEN */
         .card { 
@@ -104,7 +97,6 @@
             border-top-right-radius: 4px; 
         }
         
-        /* CARD HEADER QHSSE (Margin Top 5px) */
         .qhsse-header { margin-top: 5px !important; }
         
         /* KOLOM KIRI (INFORMASI PROYEK) */
@@ -115,53 +107,21 @@
         .pm-name { color: var(--primary-red); font-weight: bold; font-size: 12px; }
         .btn-document { background: #0056b3; color: white; text-align: center; padding: 6px; font-size: 11px; font-weight: bold; border-radius: 3px; text-decoration: none; display: block; margin: 4px 0 12px 0; }
         
-        /* LABEL & BOX COUNTDOWN */
         .countdown-title { text-align: center; font-size: 11px; font-weight: bold; color: #444; margin-top: auto; margin-bottom: 4px; padding-top: 10px; }
         .countdown-box { background: #333; color: #FFC000; font-family: 'Courier New', Courier, monospace; font-size: 16px; text-align: center; padding: 8px; letter-spacing: 0.5px; font-weight: bold; border-radius: 4px; }
         
-        /* KOTAK CARD MINI-MAP: Rasio 4:3 Terkunci */
-        .card-mini-map {
-            padding: 0 !important;
-            overflow: hidden;
-            border: 1px solid #DDD;
-        }
-        .mini-map-container { 
-            position: relative;
-            width: 100%;
-            aspect-ratio: 4 / 3; /* Terkunci proporsional */
-            overflow: hidden;
-            border-radius: 4px;
-        }
-        .mini-map-container iframe { 
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100% !important;
-            height: 100% !important;
-            border: 0;
-            margin: 0;
-            padding: 0;
-        }
-
+        .card-mini-map { padding: 0 !important; overflow: hidden; border: 1px solid #DDD; }
+        .mini-map-container { position: relative; width: 100%; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 4px; }
+        .mini-map-container iframe { position: absolute; top: 0; left: 0; width: 100% !important; height: 100% !important; border: 0; margin: 0; padding: 0; }
         .weather-box { display: flex; justify-content: space-between; font-size: 11px; background: var(--dark-blue); color: white; padding: 8px; border-radius: 4px; text-align: center; }
 
         /* KOLOM TENGAH */
         .center-column { display: flex; flex-direction: column; gap: 12px; }
         
-        /* PETA UTAMA: Rasio 16:9 Terkunci */
-        .map-section { 
-            width: 100%;
-            aspect-ratio: 16 / 9; /* Terkunci proporsional */
-            position: relative; 
-            border-radius: 4px; 
-            overflow: hidden; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
-            background: #9cd3db; 
-        }
+        .map-section { width: 100%; aspect-ratio: 16 / 9; position: relative; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); background: #9cd3db; }
         #map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         .map-floating-header { position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.95); padding: 6px 14px; border-radius: 4px; font-size: 11px; font-weight: bold; z-index: 10; box-shadow: 0 2px 6px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 8px; }
 
-        /* Row Grafik Bawah */
         .bottom-charts-row { display: grid; grid-template-columns: minmax(130px, 1.2fr) 3fr minmax(90px, 0.8fr); gap: 12px; height: 160px; }
         .progress-summary-card { background: var(--dark-blue); color: white; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         
@@ -186,10 +146,9 @@
         .qhsse-val { font-weight: bold; color: red; font-size: 14px; margin-top: 4px; }
         .btn-action { background: var(--dark-blue); color: white; font-size: 11px; font-weight: bold; text-align: center; padding: 8px; border-radius: 4px; cursor: pointer; margin-top: 4px; }
 
-        /* SIHIR RESPONSIVE: Saat layar ditarik kecil, melipat rapi ke bawah */
         @media (max-width: 1024px) {
             .dashboard-container {
-                grid-template-columns: 1fr; /* Menjadi 1 kolom penuh vertikal */
+                grid-template-columns: 1fr; 
             }
         }
     </style>
@@ -230,7 +189,7 @@
                 
                 <table class="contract-table">
                     <tr><th>Contract Value</th><th>Contract Duration</th></tr>
-                    <tr><td id="val-contract">Memuat...</td><td id="val-duration">Memuat...</td></tr>
+                    <tr><td id="val-contract">3.495 M</td><td id="val-duration">1130 Hari</td></tr>
                 </table>
                 
                 <div class="pm-box">
@@ -270,10 +229,10 @@
             <div class="bottom-charts-row">
                 <div class="card progress-summary-card">
                     <div style="font-size: 10px; margin-bottom: 5px;">Progress Summary<br>Mei 2026</div>
-                    <div class="circle-progress">
-                        <div class="circle-inner" id="val-progress-summary">Memuat...</div>
+                    <div class="circle-progress" id="circle-gradient">
+                        <div class="circle-inner" id="val-progress">96.11%</div>
                     </div>
-                    <div style="font-size: 8px; color: #AAA;">Plan: 92.358% | Dev: 3.752%</div>
+                    <div style="font-size: 8px; color: #AAA;">Plan: <span id="val-plan">92.358%</span> | Dev: <span id="val-dev">3.752%</span></div>
                 </div>
 
                 <div class="card curve-s-card">
@@ -288,12 +247,12 @@
                 </div>
 
                 <div class="kpi-column">
-                    <div class="kpi-tag" style="background:green;">SPI<br><span id="val-spi">1.02</span></div>
-                    <div class="kpi-tag" style="background:red;">EPI<br><span id="val-epi">0.95</span></div>
-                    <div class="kpi-tag" style="background:green;">CPI<br><span id="val-cpi">1.10</span></div>
+                    <div class="kpi-tag" style="background:green;" id="box-spi">SPI<br><span id="val-spi">1.02</span></div>
+                    <div class="kpi-tag" style="background:red;" id="box-epi">EPI<br><span id="val-epi">0.95</span></div>
+                    <div class="kpi-tag" style="background:green;" id="box-cpi">CPI<br><span id="val-cpi">1.10</span></div>
                     <div class="performa-box">
                         <div>PERFORMA</div>
-                        <div class="warning-banner">WARNING</div>
+                        <div class="warning-banner" id="val-performa">WARNING</div>
                     </div>
                 </div>
             </div>
@@ -304,19 +263,19 @@
                 <div class="card-header">Overview Finansial</div>
                 
                 <div class="grid-data">
-                    <div><div class="grid-label">HB</div><div class="grid-value red-text" id="val-hb">Memuat...</div></div>
-                    <div><div class="grid-label">HPP ARP</div><div class="grid-value" id="val-hpp-arp">Memuat...</div></div>
-                    <div><div class="grid-label">Real Progress</div><div class="grid-value red-text" id="val-real-progress">Memuat...</div></div>
-                    <div><div class="grid-label">HPP Real</div><div class="grid-value" id="val-hpp-real">Memuat...</div></div>
+                    <div><div class="grid-label">HB</div><div class="grid-value red-text" id="val-hb">3,148.97 M</div></div>
+                    <div><div class="grid-label">HPP ARP</div><div class="grid-value" id="val-hpp-arp">87.00 %</div></div>
+                    <div><div class="grid-label">Real Progress</div><div class="grid-value red-text" id="val-real-progress">2,739.60 M</div></div>
+                    <div><div class="grid-label">HPP Real</div><div class="grid-value" id="val-hpp-real">87.00 %</div></div>
                 </div>
 
                 <div style="text-align:center; font-size:10px; margin-bottom:2px;">EAC %</div>
-                <div class="grid-value" style="text-align:center; margin-bottom:12px;" id="val-eac">Memuat...</div>
+                <div class="grid-value" style="text-align:center; margin-bottom:12px;" id="val-eac">87.00 %</div>
 
                 <div class="card-header" style="margin-top:5px;">Solvabilitas</div>
                 <div class="grid-data">
-                    <div><div class="grid-label">Cash In</div><div class="grid-value red-text" id="val-cash-in">Memuat...</div></div>
-                    <div><div class="grid-label">Defisit / Surplus</div><div class="grid-value" id="val-defisit">Memuat...</div></div>
+                    <div><div class="grid-label">Cash In</div><div class="grid-value red-text" id="val-cash-in">2382.48 M</div></div>
+                    <div><div class="grid-label">Defisit / Surplus</div><div class="grid-value" id="val-defisit">87.00 %</div></div>
                 </div>
 
                 <div class="card-header qhsse-header">QHSSE</div>
@@ -334,10 +293,10 @@
     </div>
 
     <script src="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
     <script>
-        // --------------------------------------------------------
-        // 1. PENGATURAN MAPLIBRE
-        // --------------------------------------------------------
+        // 1. Inisialisasi MapLibre
         const map = new maplibregl.Map({
             container: 'map',
             style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json', 
@@ -352,9 +311,7 @@
             map.resize();
         });
 
-        // --------------------------------------------------------
         // 2. LIVE COUNTDOWN
-        // --------------------------------------------------------
         function initCountdown() {
             const targetDate = new Date();
             targetDate.setDate(targetDate.getDate() + 226);
@@ -389,67 +346,66 @@
             const intervalId = setInterval(updateCountdown, 1000);
         }
 
-        // --------------------------------------------------------
+        window.onload = initCountdown;
+
         // 3. FETCH DATA DARI GOOGLE SHEETS
-        // --------------------------------------------------------
-        const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vREOK2Wi_FWuc8XGV2cX_J94ez_cjFH6oeI40pqasgpN20PP-wlWwtbmn6DQmXk1AVdjmW1VeKVCOvc/pub?output=csv';
+        // Ganti URL di bawah ini dengan link 'Publish to Web' format CSV dari Google Sheet Anda
+        const googleSheetCSVUrl = "https://docs.google.com/spreadsheets/d/e/YOUR_SHEET_ID_HERE/pub?output=csv";
 
-        async function fetchDashboardData() {
-            try {
-                const response = await fetch(sheetUrl);
-                const csvText = await response.text();
+        function fetchDashboardData() {
+            Papa.parse(googleSheetCSVUrl, {
+                download: true,
+                header: true, // Membaca baris pertama sebagai Header kolom
+                complete: function(results) {
+                    const data = results.data[0]; // Mengambil baris data pertama (Indeks 0)
 
-                Papa.parse(csvText, {
-                    header: true,
-                    skipEmptyLines: true,
-                    complete: function(results) {
-                        const data = results.data;
-                        if (data.length > 0) {
-                            const row = data[0]; // Ambil data pada baris pertama
+                    if(data) {
+                        // Memperbarui Project Information
+                        if(data.ContractValue) document.getElementById('val-contract').innerText = data.ContractValue;
+                        if(data.ContractDuration) document.getElementById('val-duration').innerText = data.ContractDuration;
 
-                            // MAPPING DATA: Pasangkan Nama Header Kolom Sheet ke ID HTML
-                            // Ganti "NamaHeader..." di bawah dengan nama kolom persis di Google Sheet Anda
-                            
-                            // -- Kolom Kiri --
-                            if(row.ContractValue) document.getElementById('val-contract').innerText = row.ContractValue;
-                            if(row.ContractDuration) document.getElementById('val-duration').innerText = row.ContractDuration;
-                            
-                            // -- Kolom Tengah (Summary) --
-                            if(row.ProgressSummary) document.getElementById('val-progress-summary').innerText = row.ProgressSummary;
-                            if(row.SPI) document.getElementById('val-spi').innerText = row.SPI;
-                            if(row.EPI) document.getElementById('val-epi').innerText = row.EPI;
-                            if(row.CPI) document.getElementById('val-cpi').innerText = row.CPI;
-                            
-                            // -- Kolom Kanan (Financial) --
-                            if(row.HB) document.getElementById('val-hb').innerText = row.HB;
-                            if(row.HPP_ARP) document.getElementById('val-hpp-arp').innerText = row.HPP_ARP;
-                            if(row.RealProgress) document.getElementById('val-real-progress').innerText = row.RealProgress;
-                            if(row.HPP_Real) document.getElementById('val-hpp-real').innerText = row.HPP_Real;
-                            if(row.EAC) document.getElementById('val-eac').innerText = row.EAC;
-                            if(row.CashIn) document.getElementById('val-cash-in').innerText = row.CashIn;
-                            if(row.DefisitSurplus) document.getElementById('val-defisit').innerText = row.DefisitSurplus;
-
-                            // -- Kolom Kanan (QHSSE) --
-                            if(row.NC) document.getElementById('val-nc').innerText = row.NC;
-                            if(row.Nearmiss) document.getElementById('val-nearmiss').innerText = row.Nearmiss;
-                            if(row.Fatality) document.getElementById('val-fatality').innerText = row.Fatality;
-
-                            console.log("Data berhasil diambil dan diperbarui dari Google Sheets:", row);
+                        // Memperbarui Progress Summary
+                        if(data.ProgressSummary) {
+                            document.getElementById('val-progress').innerText = data.ProgressSummary;
+                            // Update warna dynamic circle chart berdasarkan value progress (Asumsi format teks misal "96.11%")
+                            let progressNum = parseFloat(data.ProgressSummary.replace('%', ''));
+                            if(!isNaN(progressNum)) {
+                                document.getElementById('circle-gradient').style.background = `conic-gradient(#00FF00 ${progressNum}%, #444 0)`;
+                            }
                         }
+                        if(data.ProgressPlan) document.getElementById('val-plan').innerText = data.ProgressPlan;
+                        if(data.ProgressDev) document.getElementById('val-dev').innerText = data.ProgressDev;
+
+                        // Memperbarui KPI (SPI, EPI, CPI)
+                        if(data.SPI) document.getElementById('val-spi').innerText = data.SPI;
+                        if(data.EPI) document.getElementById('val-epi').innerText = data.EPI;
+                        if(data.CPI) document.getElementById('val-cpi').innerText = data.CPI;
+
+                        // Memperbarui Finansial
+                        if(data.HB) document.getElementById('val-hb').innerText = data.HB;
+                        if(data.HPP_ARP) document.getElementById('val-hpp-arp').innerText = data.HPP_ARP;
+                        if(data.RealProgress) document.getElementById('val-real-progress').innerText = data.RealProgress;
+                        if(data.HPP_Real) document.getElementById('val-hpp-real').innerText = data.HPP_Real;
+                        if(data.EAC) document.getElementById('val-eac').innerText = data.EAC;
+                        if(data.CashIn) document.getElementById('val-cash-in').innerText = data.CashIn;
+                        if(data.DefisitSurplus) document.getElementById('val-defisit').innerText = data.DefisitSurplus;
+
+                        // Memperbarui QHSSE
+                        if(data.NC) document.getElementById('val-nc').innerText = data.NC;
+                        if(data.Nearmiss) document.getElementById('val-nearmiss').innerText = data.Nearmiss;
+                        if(data.Fatality) document.getElementById('val-fatality').innerText = data.Fatality;
                     }
-                });
-            } catch (error) {
-                console.error("Gagal mengambil data dari Google Sheet:", error);
-            }
+                },
+                error: function(error) {
+                    console.error("Gagal menarik data CSV: ", error);
+                }
+            });
         }
 
-        // --------------------------------------------------------
-        // 4. JALANKAN SEMUA FUNGSI SAAT HALAMAN DIMUAT
-        // --------------------------------------------------------
-        window.onload = () => {
-            initCountdown();       // Jalankan Timer
-            fetchDashboardData();  // Tarik Data Spreadsheet
-        };
+        // Panggil fungsi penarik data
+        // Hilangkan komentar // di bawah ini setelah Anda memasukkan URL CSV Anda
+        // fetchDashboardData();
+
     </script>
 </body>
 </html>
