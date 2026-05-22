@@ -241,7 +241,7 @@
                 
                 <div class="pm-box">
                     <div>Project Manager:</div>
-                    <div class="pm-name">Daryanto Aloysius</div>
+                    <div class="pm-name" id="val-project-manager" class="loading">Memuat...</div>
                 </div>
                 
                 <a href="#" class="btn-document">Contract Document</a>
@@ -368,6 +368,7 @@
             DEMO_DATA: {
                 ContractValue: 'Rp 500 Miliar',
                 ContractDuration: '24 Bulan',
+                ProjectManager: 'Daryanto Aloysius',
                 TargetFinish: '2026-12-31', // Format: YYYY-MM-DD
                 ProgressSummary: '85.5%',
                 SPI: '1.02',
@@ -542,6 +543,7 @@
                 const fieldsToUpdate = {
                     'val-contract': 'ContractValue',
                     'val-duration': 'ContractDuration',
+                    'val-project-manager': 'ProjectManager',
                     'val-progress-summary': 'ProgressSummary',
                     'val-spi': 'SPI',
                     'val-epi': 'EPI',
