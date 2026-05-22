@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PMIS - Proyek Tol IKN (Dynamic Data)</title>
+    <title>PMIS - Proyek Tol IKN (Dynamic Scrolling Page)</title>
     <link href="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.css" rel="stylesheet" />
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-
+    
     <style>
         :root {
             --primary-red: #8B0000;
@@ -16,86 +16,440 @@
             --card-gray: #E6E6E6;
         }
 
-        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--light-bg); overflow-x: hidden; }
+        /* MENGIZINKAN HALAMAN UNTUK SCROLL MEMANJANG KE BAWAH */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-bg);
+            color: #333;
+            box-sizing: border-box;
+            overflow-x: hidden;
+            overflow-y: auto; /* Scroll utama aktif kembali */
+        }
 
-        header { background-color: var(--primary-red); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #FFC000; }
+        /* HEADER UTAMA */
+        header {
+            background-color: var(--primary-red);
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #FFC000;
+            gap: 10px;
+        }
+        .header-left { display: flex; align-items: center; gap: 15px; min-width: 300px; }
         .logo-placeholder { font-weight: bold; font-size: 24px; border: 2px solid white; padding: 2px 10px; }
+        .project-title h1 { margin: 0; font-size: 13px; letter-spacing: 0.5px; }
+        .project-title h2 { margin: 3px 0 0 0; font-size: 11px; font-weight: normal; color: #DDD; }
         
-        .dashboard-container { display: grid; grid-template-columns: 240px 1fr 260px; gap: 12px; padding: 12px; }
-        .card { background: white; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); padding: 10px; margin-bottom: 12px; }
-        .card-header { background: var(--primary-red); color: white; text-align: center; font-size: 11px; font-weight: bold; padding: 6px; margin: -10px -10px 10px -10px; border-radius: 4px 4px 0 0; }
+        .header-nav { display: flex; gap: 15px; font-size: 11px; flex-wrap: wrap; }
+        .header-nav a { color: white; text-decoration: none; font-weight: bold; }
+
+        /* SUB-NAVIGATION BAR */
+        .sub-nav {
+            background-color: white;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            padding: 8px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            border-bottom: 1px solid #CCC;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            gap: 8px;
+        }
+        .sub-nav div { cursor: pointer; color: #555; padding: 2px 5px; }
+        .sub-nav div.active { color: black; border-bottom: 2px solid var(--primary-red); }
+
+        /* ARSITEKTUR LAYOUT GRID MENGGUNAKAN TINGGI OTOMATIS (AUTO-STRETCH) */
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: minmax(240px, 1.2fr) minmax(400px, 4fr) minmax(260px, 1.3fr);
+            gap: 12px;
+            padding: 12px;
+            height: auto; /* Tinggi otomatis agar bisa memanjang ke bawah */
+            box-sizing: border-box;
+        }
+
+        /* STRUKTUR KOLOM */
+        .column { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+        }
         
-        .grid-value { background: var(--card-gray); font-weight: bold; padding: 5px; border-radius: 3px; font-size: 11px; text-align: center; }
-        .red-text { color: red; }
+        /* CARD KOMPONEN */
+        .card { 
+            background: white; 
+            border-radius: 4px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+            padding: 10px; 
+            box-sizing: border-box; 
+            display: flex; 
+            flex-direction: column; 
+        }
         
-        #map { height: 400px; width: 100%; border-radius: 4px; }
+        .card-header { 
+            background: var(--primary-red); 
+            color: white; 
+            text-align: center; 
+            font-size: 11px; 
+            font-weight: bold; 
+            padding: 6px; 
+            margin: -10px -10px 10px -10px; 
+            border-top-left-radius: 4px; 
+            border-top-right-radius: 4px; 
+        }
         
-        @media (max-width: 1024px) { .dashboard-container { grid-template-columns: 1fr; } }
+        /* CARD HEADER QHSSE (Margin Top 5px) */
+        .qhsse-header { margin-top: 5px !important; }
+        
+        /* KOLOM KIRI (INFORMASI PROYEK) */
+        .contract-table { width: 100%; font-size: 11px; border-collapse: collapse; text-align: center; margin-bottom: 10px; }
+        .contract-table th { color: #666; font-weight: normal; padding-bottom: 5px; }
+        .contract-table td { font-weight: bold; font-size: 12px; }
+        .pm-box { text-align: center; font-size: 11px; border-top: 1px solid #EEE; padding-top: 8px; margin-bottom: 8px; }
+        .pm-name { color: var(--primary-red); font-weight: bold; font-size: 12px; }
+        .btn-document { background: #0056b3; color: white; text-align: center; padding: 6px; font-size: 11px; font-weight: bold; border-radius: 3px; text-decoration: none; display: block; margin: 4px 0 12px 0; }
+        
+        /* LABEL & BOX COUNTDOWN */
+        .countdown-title { text-align: center; font-size: 11px; font-weight: bold; color: #444; margin-top: auto; margin-bottom: 4px; padding-top: 10px; }
+        .countdown-box { background: #333; color: #FFC000; font-family: 'Courier New', Courier, monospace; font-size: 16px; text-align: center; padding: 8px; letter-spacing: 0.5px; font-weight: bold; border-radius: 4px; }
+        
+        /* KOTAK CARD MINI-MAP: Rasio 4:3 Terkunci */
+        .card-mini-map {
+            padding: 0 !important;
+            overflow: hidden;
+            border: 1px solid #DDD;
+        }
+        .mini-map-container { 
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4 / 3; /* Terkunci proporsional */
+            overflow: hidden;
+            border-radius: 4px;
+        }
+        .mini-map-container iframe { 
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100% !important;
+            height: 100% !important;
+            border: 0;
+            margin: 0;
+            padding: 0;
+        }
+
+        .weather-box { display: flex; justify-content: space-between; font-size: 11px; background: var(--dark-blue); color: white; padding: 8px; border-radius: 4px; text-align: center; }
+
+        /* KOLOM TENGAH */
+        .center-column { display: flex; flex-direction: column; gap: 12px; }
+        
+        /* PETA UTAMA: Rasio 16:9 Terkunci */
+        .map-section { 
+            width: 100%;
+            aspect-ratio: 16 / 9; /* Terkunci proporsional */
+            position: relative; 
+            border-radius: 4px; 
+            overflow: hidden; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+            background: #9cd3db; 
+        }
+        #map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .map-floating-header { position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.95); padding: 6px 14px; border-radius: 4px; font-size: 11px; font-weight: bold; z-index: 10; box-shadow: 0 2px 6px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 8px; }
+
+        /* Row Grafik Bawah */
+        .bottom-charts-row { display: grid; grid-template-columns: minmax(130px, 1.2fr) 3fr minmax(90px, 0.8fr); gap: 12px; height: 160px; }
+        .progress-summary-card { background: var(--dark-blue); color: white; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        
+        .circle-progress { width: 65px; height: 65px; border-radius: 50%; background: conic-gradient(#00FF00 96%, #444 0); display: flex; justify-content: center; align-items: center; margin-bottom: 5px; font-weight: bold; font-size: 12px; }
+        .circle-inner { width: 52px; height: 52px; background: var(--dark-blue); border-radius: 50%; display: flex; justify-content: center; align-items: center; }
+        
+        .curve-s-card { background: var(--dark-blue); color: white; display: flex; flex-direction: column; justify-content: space-between; }
+        .dummy-chart { flex: 1; display: flex; align-items: flex-end; gap: 6px; padding-top: 10px; border-left: 2px solid white; border-bottom: 2px solid white; margin: 5px 10px; }
+        .bar { flex: 1; background: #00FFFF; min-width: 15px; }
+        
+        .kpi-column { display: flex; flex-direction: column; gap: 4px; font-size: 9px; font-weight: bold; text-align: center; color: white; justify-content: space-between; }
+        .kpi-tag { padding: 3px 0; border-radius: 2px; }
+        .performa-box { background: var(--dark-blue); padding: 5px 0; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .warning-banner { background: #FFFF00; color: black; width: 100%; text-align: center; font-weight: bold; padding: 2px 0; }
+
+        /* KOLOM KANAN */
+        .grid-data { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 11px; margin-bottom: 8px; text-align: center; }
+        .grid-label { color: #444; font-size: 10px; margin-bottom: 2px; }
+        .grid-value { background: var(--card-gray); font-weight: bold; padding: 5px; border-radius: 3px; font-size: 11px; }
+        .grid-value.red-text { color: red; }
+        .qhsse-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; text-align: center; font-size: 11px; }
+        .qhsse-val { font-weight: bold; color: red; font-size: 14px; margin-top: 4px; }
+        .btn-action { background: var(--dark-blue); color: white; font-size: 11px; font-weight: bold; text-align: center; padding: 8px; border-radius: 4px; cursor: pointer; margin-top: 4px; }
+
+        /* SIHIR RESPONSIVE: Saat layar ditarik kecil, melipat rapi ke bawah */
+        @media (max-width: 1024px) {
+            .dashboard-container {
+                grid-template-columns: 1fr; /* Menjadi 1 kolom penuh vertikal */
+            }
+        }
     </style>
 </head>
 <body>
 
     <header>
-        <div><strong>PMIS</strong> | PROYEK TOL IKN</div>
+        <div class="header-left">
+            <div class="logo-placeholder">HK</div>
+            <div class="project-title">
+                <h1>PROJECT MANAGEMENT INFORMATION SYSTEM</h1>
+                <h2>PROYEK TOL IKN SEGMEN JEMBATAN P. BALANG - SP. RIKO SEKSI 5B</h2>
+            </div>
+        </div>
+        <div class="header-nav">
+            <a href="#">Lean Management</a>
+            <a href="#">Financial Dashboard</a>
+            <a href="#">Risk Management</a>
+            <a href="#">BIM 360</a>
+        </div>
     </header>
 
+    <div class="sub-nav">
+        <div class="active">Home</div>
+        <div>Progress Monitoring</div>
+        <div>Progress Visualization</div>
+        <div>CCTV</div>
+        <div>Organization Chart</div>
+        <div>Project Data</div>
+    </div>
+
     <div class="dashboard-container">
+        
         <div class="column">
             <div class="card">
                 <div class="card-header">Project Information</div>
-                <div>Contract Value: <div id="contract-value" class="grid-value">Loading...</div></div>
+                <div style="text-align: center; margin: 10px 0;"><strong style="color: #0056b3;">KEMENPU | HK</strong></div>
+                
+                <table class="contract-table">
+                    <tr><th>Contract Value</th><th>Contract Duration</th></tr>
+                    <tr><td id="val-contract">Memuat...</td><td id="val-duration">Memuat...</td></tr>
+                </table>
+                
+                <div class="pm-box">
+                    <div>Project Manager:</div>
+                    <div class="pm-name">Daryanto Aloysius</div>
+                </div>
+                
+                <a href="#" class="btn-document">Contract Document</a>
+                
+                <div class="countdown-title">Sisa Waktu Pekerjaan</div>
+                <div id="countdown" class="countdown-box">000 Hari 00:00:00</div>
+            </div>
+            
+            <div class="card card-mini-map">
+                <div class="mini-map-container">
+                    <iframe src="https://maps.google.com/maps?q=-1.1274,116.6856&z=13&t=h&output=embed" allowfullscreen="" loading="lazy"></iframe>
+                </div>
+            </div>
+            
+            <div class="weather-box">
+                <div><strong>Sel</strong><br>30°C</div>
+                <div><strong>Rab</strong><br>30°C</div>
+                <div><strong>Kam</strong><br>32°C</div>
+                <div><strong>Jum</strong><br>31°C</div>
             </div>
         </div>
 
-        <div class="column">
-            <div id="map"></div>
+        <div class="center-column">
+            <div class="map-section">
+                <div class="map-floating-header">
+                    <span style="color:#e60000; font-weight:bold;">⬤ 3D MAP VIEW</span>
+                    <span>CARTO-GL VOYAGER</span>
+                </div>
+                <div id="map"></div>
+            </div>
+
+            <div class="bottom-charts-row">
+                <div class="card progress-summary-card">
+                    <div style="font-size: 10px; margin-bottom: 5px;">Progress Summary<br>Mei 2026</div>
+                    <div class="circle-progress">
+                        <div class="circle-inner" id="val-progress-summary">Memuat...</div>
+                    </div>
+                    <div style="font-size: 8px; color: #AAA;">Plan: 92.358% | Dev: 3.752%</div>
+                </div>
+
+                <div class="card curve-s-card">
+                    <div class="card-header" style="background:none; text-align:left; margin:0; padding:0;">KURVA S</div>
+                    <div class="dummy-chart">
+                        <div class="bar" style="height: 20%;"></div>
+                        <div class="bar" style="height: 40%;"></div>
+                        <div class="bar" style="height: 65%;"></div>
+                        <div class="bar" style="height: 85%;"></div>
+                        <div class="bar" style="height: 96%;"></div>
+                    </div>
+                </div>
+
+                <div class="kpi-column">
+                    <div class="kpi-tag" style="background:green;">SPI<br><span id="val-spi">1.02</span></div>
+                    <div class="kpi-tag" style="background:red;">EPI<br><span id="val-epi">0.95</span></div>
+                    <div class="kpi-tag" style="background:green;">CPI<br><span id="val-cpi">1.10</span></div>
+                    <div class="performa-box">
+                        <div>PERFORMA</div>
+                        <div class="warning-banner">WARNING</div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="column">
             <div class="card">
                 <div class="card-header">Overview Finansial</div>
-                <div>Real Progress: <div id="real-progress" class="grid-value red-text">Loading...</div></div>
+                
+                <div class="grid-data">
+                    <div><div class="grid-label">HB</div><div class="grid-value red-text" id="val-hb">Memuat...</div></div>
+                    <div><div class="grid-label">HPP ARP</div><div class="grid-value" id="val-hpp-arp">Memuat...</div></div>
+                    <div><div class="grid-label">Real Progress</div><div class="grid-value red-text" id="val-real-progress">Memuat...</div></div>
+                    <div><div class="grid-label">HPP Real</div><div class="grid-value" id="val-hpp-real">Memuat...</div></div>
+                </div>
+
+                <div style="text-align:center; font-size:10px; margin-bottom:2px;">EAC %</div>
+                <div class="grid-value" style="text-align:center; margin-bottom:12px;" id="val-eac">Memuat...</div>
+
+                <div class="card-header" style="margin-top:5px;">Solvabilitas</div>
+                <div class="grid-data">
+                    <div><div class="grid-label">Cash In</div><div class="grid-value red-text" id="val-cash-in">Memuat...</div></div>
+                    <div><div class="grid-label">Defisit / Surplus</div><div class="grid-value" id="val-defisit">Memuat...</div></div>
+                </div>
+
+                <div class="card-header qhsse-header">QHSSE</div>
+                <div class="qhsse-row">
+                    <div><div class="grid-label">NC</div><div class="qhsse-val" id="val-nc">0</div></div>
+                    <div><div class="grid-label">Nearmiss</div><div class="qhsse-val" id="val-nearmiss">0</div></div>
+                    <div><div class="grid-label">Fatality</div><div class="qhsse-val" id="val-fatality">0</div></div>
+                </div>
             </div>
+
+            <div class="btn-action">Issue Log & Action Plan</div>
+            <div class="btn-action">3 Top Risk</div>
         </div>
+
     </div>
 
     <script src="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.js"></script>
     <script>
-        // GANTI URL INI DENGAN URL CSV PUBLIK GOOGLE SHEET ANDA
+        // --------------------------------------------------------
+        // 1. PENGATURAN MAPLIBRE
+        // --------------------------------------------------------
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json', 
+            center: [116.6856, -1.1274], 
+            zoom: 13.5, 
+            pitch: 60,  
+            bearing: 25, 
+            antialias: true
+        });
+
+        window.addEventListener('resize', () => {
+            map.resize();
+        });
+
+        // --------------------------------------------------------
+        // 2. LIVE COUNTDOWN
+        // --------------------------------------------------------
+        function initCountdown() {
+            const targetDate = new Date();
+            targetDate.setDate(targetDate.getDate() + 226);
+            targetDate.setHours(24, 0, 0, 0); 
+
+            const countdownElement = document.getElementById('countdown');
+
+            function updateCountdown() {
+                const now = new Date().getTime();
+                const distance = targetDate.getTime() - now;
+
+                if (distance < 0) {
+                    countdownElement.innerHTML = "PROYEK SELESAI";
+                    clearInterval(intervalId);
+                    return;
+                }
+
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                const formattedDays = String(days).padStart(3, '0');
+                const formattedHours = String(hours).padStart(2, '0');
+                const formattedMinutes = String(minutes).padStart(2, '0');
+                const formattedSeconds = String(seconds).padStart(2, '0');
+
+                countdownElement.innerHTML = `${formattedDays} Hari ${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
+            }
+
+            updateCountdown();
+            const intervalId = setInterval(updateCountdown, 1000);
+        }
+
+        // --------------------------------------------------------
+        // 3. FETCH DATA DARI GOOGLE SHEETS
+        // --------------------------------------------------------
         const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vREOK2Wi_FWuc8XGV2cX_J94ez_cjFH6oeI40pqasgpN20PP-wlWwtbmn6DQmXk1AVdjmW1VeKVCOvc/pub?output=csv';
 
-        async function updateData() {
+        async function fetchDashboardData() {
             try {
                 const response = await fetch(sheetUrl);
                 const csvText = await response.text();
 
                 Papa.parse(csvText, {
                     header: true,
+                    skipEmptyLines: true,
                     complete: function(results) {
-                        const row = results.data[0]; // Mengambil baris pertama
-                        
-                        // Update elemen HTML berdasarkan nama kolom di Google Sheet
-                        if(row.ContractValue) document.getElementById('contract-value').innerText = row.ContractValue;
-                        if(row.RealProgress) document.getElementById('real-progress').innerText = row.RealProgress;
-                        
-                        console.log("Data diperbarui dari Sheet:", row);
+                        const data = results.data;
+                        if (data.length > 0) {
+                            const row = data[0]; // Ambil data pada baris pertama
+
+                            // MAPPING DATA: Pasangkan Nama Header Kolom Sheet ke ID HTML
+                            // Ganti "NamaHeader..." di bawah dengan nama kolom persis di Google Sheet Anda
+                            
+                            // -- Kolom Kiri --
+                            if(row.ContractValue) document.getElementById('val-contract').innerText = row.ContractValue;
+                            if(row.ContractDuration) document.getElementById('val-duration').innerText = row.ContractDuration;
+                            
+                            // -- Kolom Tengah (Summary) --
+                            if(row.ProgressSummary) document.getElementById('val-progress-summary').innerText = row.ProgressSummary;
+                            if(row.SPI) document.getElementById('val-spi').innerText = row.SPI;
+                            if(row.EPI) document.getElementById('val-epi').innerText = row.EPI;
+                            if(row.CPI) document.getElementById('val-cpi').innerText = row.CPI;
+                            
+                            // -- Kolom Kanan (Financial) --
+                            if(row.HB) document.getElementById('val-hb').innerText = row.HB;
+                            if(row.HPP_ARP) document.getElementById('val-hpp-arp').innerText = row.HPP_ARP;
+                            if(row.RealProgress) document.getElementById('val-real-progress').innerText = row.RealProgress;
+                            if(row.HPP_Real) document.getElementById('val-hpp-real').innerText = row.HPP_Real;
+                            if(row.EAC) document.getElementById('val-eac').innerText = row.EAC;
+                            if(row.CashIn) document.getElementById('val-cash-in').innerText = row.CashIn;
+                            if(row.DefisitSurplus) document.getElementById('val-defisit').innerText = row.DefisitSurplus;
+
+                            // -- Kolom Kanan (QHSSE) --
+                            if(row.NC) document.getElementById('val-nc').innerText = row.NC;
+                            if(row.Nearmiss) document.getElementById('val-nearmiss').innerText = row.Nearmiss;
+                            if(row.Fatality) document.getElementById('val-fatality').innerText = row.Fatality;
+
+                            console.log("Data berhasil diambil dan diperbarui dari Google Sheets:", row);
+                        }
                     }
                 });
-            } catch (err) {
-                console.error("Gagal mengambil data:", err);
+            } catch (error) {
+                console.error("Gagal mengambil data dari Google Sheet:", error);
             }
         }
 
-        // Inisialisasi Peta
-        const map = new maplibregl.Map({
-            container: 'map',
-            style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
-            center: [116.6856, -1.1274],
-            zoom: 13
-        });
-
-        // Jalankan saat load
-        window.onload = updateData;
+        // --------------------------------------------------------
+        // 4. JALANKAN SEMUA FUNGSI SAAT HALAMAN DIMUAT
+        // --------------------------------------------------------
+        window.onload = () => {
+            initCountdown();       // Jalankan Timer
+            fetchDashboardData();  // Tarik Data Spreadsheet
+        };
     </script>
 </body>
 </html>
