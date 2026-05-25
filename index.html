@@ -287,7 +287,7 @@
                     <div class="circle-progress" id="progressCircle">
                         <div class="circle-inner" id="val-progress-summary" class="loading">Memuat...</div>
                     </div>
-                    <div style="font-size: 8px; color: #AAA;">Plan: 92.358% | Dev: 3.752%</div>
+                    <div style="font-size: 8px; color: #AAA;">Plan: <span id="val-progress-plan">92.358%</span> | Dev: 3.752%</div>
                 </div>
 
                 <div class="card curve-s-card">
@@ -379,6 +379,7 @@
                 ProjectManager: 'Daryanto Aloysius',
                 TargetFinish: '2026-12-31', // Format: YYYY-MM-DD
                 ProgressSummary: '85.5%',
+                ProgressPlan: '92.358%',
                 SPI: '1.02',
                 EPI: '0.95',
                 CPI: '1.10',
@@ -511,10 +512,14 @@
         }
 
         // ===== UPDATE PROGRESS CIRCLE =====
-        function updateProgressCircle(progressValue) {
-            // Clean the progress value: remove '%', spaces, replace ',' with '.'
+        function updateProgressCircle(progressValue, progressPlanValue) {
+            // Clean the progress summary value
             let cleanValue = progressValue.replace('%', '').replace(',', '.').trim();
             let progressNum = parseFloat(cleanValue);
+
+            // Clean the progress plan value
+            let cleanPlanValue = progressPlanValue.replace('%', '').replace(',', '.').trim();
+            let planNum = parseFloat(cleanPlanValue);
 
             if (!isNaN(progressNum)) {
                 // Clamp value between 0 and 100
@@ -527,12 +532,21 @@
                 // Get the circle element by ID
                 const circleElement = document.getElementById('progressCircle');
                 
-                // Determine color based on progress
-                let color = '#00FF00'; // Green for good progress
-                if (progressNum < 50) {
-                    color = '#FF0000'; // Red for low progress
-                } else if (progressNum < 75) {
-                    color = '#FFFF00'; // Yellow for moderate progress
+                // Determine color based on comparison with plan
+                let color = '#00FF00'; // Green - over plan (good)
+                if (!isNaN(planNum)) {
+                    if (progressNum < planNum) {
+                        color = '#FF0000'; // Red - under plan (behind schedule)
+                    } else {
+                        color = '#00FF00'; // Green - on or over plan (ahead/on track)
+                    }
+                } else {
+                    // Fallback to old logic if plan value is invalid
+                    if (progressNum < 50) {
+                        color = '#FF0000';
+                    } else if (progressNum < 75) {
+                        color = '#FFFF00';
+                    }
                 }
                 
                 // Set the background using inline style
@@ -543,7 +557,14 @@
                 innerElement.innerText = `${progressNum.toFixed(1)}%`;
                 innerElement.classList.remove('loading');
                 
-                log(`✅ Progress circle updated: ${progressNum}% = ${degrees}deg (Color: ${color})`, 'success');
+                // Update the progress plan display
+                const planElement = document.getElementById('val-progress-plan');
+                if (planElement) {
+                    planElement.innerText = progressPlanValue;
+                }
+                
+                const status = progressNum >= planNum ? 'AHEAD' : 'BEHIND';
+                log(`✅ Progress circle updated: Summary=${progressNum}% | Plan=${planNum}% | Status=${status} | Color=${color}`, 'success');
             } else {
                 log(`⚠️ Failed to parse progress value: ${progressValue}`, 'warn');
             }
@@ -616,10 +637,11 @@
                     }
                 }
 
-                // Update progress circle with ProgressSummary
+                // Update progress circle with ProgressSummary and ProgressPlan
                 if (row['ProgressSummary']) {
-                    log(`Updating progress circle with: ${row['ProgressSummary']}`, 'info');
-                    updateProgressCircle(row['ProgressSummary']);
+                    const progressPlan = row['ProgressPlan'] || CONFIG.DEMO_DATA.ProgressPlan;
+                    log(`Updating progress circle: Summary=${row['ProgressSummary']} | Plan=${progressPlan}`, 'info');
+                    updateProgressCircle(row['ProgressSummary'], progressPlan);
                 }
 
                 // Update countdown with TargetFinish from spreadsheet (only if different from current)
@@ -652,8 +674,8 @@
             // Initialize countdown with demo data
             initCountdown(CONFIG.DEMO_DATA.TargetFinish);
             
-            // Initialize progress circle with demo data
-            updateProgressCircle(CONFIG.DEMO_DATA.ProgressSummary);
+            // Initialize progress circle with demo data (ProgressSummary and ProgressPlan)
+            updateProgressCircle(CONFIG.DEMO_DATA.ProgressSummary, CONFIG.DEMO_DATA.ProgressPlan);
             
             // Delay slightly to ensure DOM is ready
             setTimeout(fetchDashboardData, 500);
