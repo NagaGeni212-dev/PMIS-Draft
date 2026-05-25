@@ -273,7 +273,7 @@
 
             <div class="bottom-charts-row">
                 <div class="card progress-summary-card">
-                    <div style="font-size: 10px; margin-bottom: 5px;">Progress Summary<br>Mei 2026</div>
+                    <div id="val-month-year" style="font-size: 10px; margin-bottom: 5px;">Progress Summary<br>Memuat...</div>
                     <div class="circle-progress">
                         <div class="circle-inner" id="val-progress-summary" class="loading">Memuat...</div>
                     </div>
@@ -366,8 +366,7 @@
                 ProjectManager: 'Daryanto Aloysius',
                 TargetFinish: '2026-12-31', 
                 ProgressSummary: '85.5%', // Actual
-                ProgressPlan: '92.358', // Plan (Changed to ProgressPlan)
-                Dev: '3.752',   
+                ProgressPlan: '92.358', // Plan
                 SPI: '1.02',
                 EPI: '0.95',
                 CPI: '1.10',
@@ -554,34 +553,28 @@
             }
         }
 
-        // ===== UPDATE PROGRESS CIRCLE (RULE: PLAN VS ACTUAL) =====
+        // ===== UPDATE PROGRESS CIRCLE =====
         function updateProgressCircle(progressValue, planValue) {
-            // Clean and parse Actual Progress
             let cleanProgress = String(progressValue).replace('%', '').replace(',', '.').trim();
             let progressNum = parseFloat(cleanProgress);
 
-            // Clean and parse Plan Progress (default to 0 if missing)
             let cleanPlan = String(planValue || '0').replace('%', '').replace(',', '.').trim();
             let planNum = parseFloat(cleanPlan);
 
             if (!isNaN(progressNum)) {
                 progressNum = Math.min(Math.max(progressNum, 0), 100);
-                
-                // CONVERT PERCENTAGE TO DEGREES (0 - 360)
                 let degrees = (progressNum / 100) * 360;
                 
-                // === COLOR RULE ===
                 let color = '#00FF00'; // Default Green
                 if (!isNaN(planNum)) {
                     if (planNum > progressNum) {
                         color = '#FF0000'; // Red if Plan is greater than Actual
                     } else {
-                        color = '#00FF00'; // Green if Plan is less than or equal to Actual
+                        color = '#00FF00'; // Green if Actual is greater/equal
                     }
                 }
                 
                 const circleElement = document.querySelector('.circle-progress');
-                // Apply the 360-degree math and color rule
                 circleElement.style.background = `conic-gradient(${color} ${degrees}deg, #444 0deg)`;
                 
                 log(`✅ Progress circle updated: Act=${progressNum}%, Plan=${planNum}% -> ${degrees}deg (Color: ${color})`, 'success');
@@ -607,7 +600,6 @@
 
                 const data = await response.json();
                 log('✅ Data received successfully!', 'success');
-                console.log('Received data:', data);
 
                 if (data && Array.isArray(data) && data.length > 0) {
                     updateDashboard(data[0]);
@@ -628,6 +620,17 @@
         // ===== UPDATE DASHBOARD =====
         function updateDashboard(row) {
             try {
+                // 1. UPDATE DYNAMIC DATE (MONTH & YEAR)
+                const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+                const today = new Date();
+                const currentMonthYear = `${monthNames[today.getMonth()]} ${today.getFullYear()}`;
+                
+                const monthYearElement = document.getElementById('val-month-year');
+                if(monthYearElement) {
+                    monthYearElement.innerHTML = `Progress Summary<br>${currentMonthYear}`;
+                }
+
+                // 2. TEXT FIELDS UPDATE
                 const fieldsToUpdate = {
                     'val-contract': 'ContractValue',
                     'val-duration': 'ContractDuration',
@@ -658,28 +661,36 @@
                     }
                 }
 
-                // CHANGED: ProgressSummary compared with ProgressPlan
-                if (row['ProgressSummary'] !== undefined) {
-                    log(`Updating progress circle with: ${row['ProgressSummary']} (Plan: ${row['ProgressPlan']})`, 'info');
+                // 3. PROGRESS CIRCLE & DYNAMIC PLAN / DEV MATH
+                if (row['ProgressSummary'] !== undefined && row['ProgressPlan'] !== undefined) {
+                    
+                    // Trigger Circle Gradient
                     updateProgressCircle(row['ProgressSummary'], row['ProgressPlan']);
-                }
 
-                // CHANGED: Dynamic Plan & Dev formatting reading from ProgressPlan
-                if (row['ProgressPlan'] !== undefined && row['Dev'] !== undefined) {
-                    const formatPercent = (val) => String(val).includes('%') ? val : `${val}%`;
-                    let planText = formatPercent(row['ProgressPlan']);
-                    let devText = formatPercent(row['Dev']);
+                    // Calculate Dev = Actual - Plan
+                    let actualVal = parseFloat(String(row['ProgressSummary']).replace('%', '').replace(',', '.').trim()) || 0;
+                    let planVal = parseFloat(String(row['ProgressPlan']).replace('%', '').replace(',', '.').trim()) || 0;
+                    
+                    let devVal = actualVal - planVal;
+                    
+                    // Format output
+                    const formatPercentStr = (str) => String(str).includes('%') ? str : `${str}%`;
+                    let planText = formatPercentStr(row['ProgressPlan']);
+                    
+                    // Add '+' sign if it's positive, format to 3 decimal places
+                    let devSign = devVal > 0 ? '+' : '';
+                    let devText = `${devSign}${devVal.toFixed(3)}%`;
                     
                     document.getElementById('val-plan-dev').innerText = `Plan: ${planText} | Dev: ${devText}`;
-                    log(`✅ Updated Plan/Dev text to: Plan: ${planText} | Dev: ${devText}`, 'success');
+                    log(`✅ Calculated Dev: Act(${actualVal}) - Plan(${planVal}) = ${devVal}`, 'success');
                 }
 
+                // 4. COUNTDOWN
                 if (row['TargetFinish']) {
-                    log(`Updating countdown with TargetFinish: ${row['TargetFinish']}`, 'info');
                     initCountdown(row['TargetFinish']);
                 }
 
-                log(`✅ Updated ${updatedCount}/${Object.keys(fieldsToUpdate).length} fields`, 'success');
+                log(`✅ Updated ${updatedCount}/${Object.keys(fieldsToUpdate).length} standard fields`, 'success');
             } catch (error) {
                 log(`Error updating dashboard: ${error.message}`, 'error');
                 showError('Failed to display data');
@@ -712,7 +723,6 @@
 
         // Allow manual retry via console
         window.retryFetch = fetchDashboardData;
-        log('💡 Tip: Type retryFetch() in console to manually retry data fetch', 'info');
     </script>
 </body>
 </html>
