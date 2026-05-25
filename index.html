@@ -365,9 +365,9 @@
                 ContractDuration: '24 Bulan',
                 ProjectManager: 'Daryanto Aloysius',
                 TargetFinish: '2026-12-31', 
-                ProgressSummary: '85.5%',
-                Plan: '92.358', // Added Plan Demo Data
-                Dev: '3.752',   // Added Dev Demo Data
+                ProgressSummary: '85.5%', // Actual
+                Plan: '92.358', // Plan
+                Dev: '3.752',   
                 SPI: '1.02',
                 EPI: '0.95',
                 CPI: '1.10',
@@ -554,10 +554,15 @@
             }
         }
 
-        // ===== UPDATE PROGRESS CIRCLE (0-100 to 0-360 Degrees) =====
-        function updateProgressCircle(progressValue) {
-            let cleanValue = String(progressValue).replace('%', '').replace(',', '.').trim();
-            let progressNum = parseFloat(cleanValue);
+        // ===== UPDATE PROGRESS CIRCLE (NEW RULE: PLAN VS ACTUAL) =====
+        function updateProgressCircle(progressValue, planValue) {
+            // Clean and parse Actual Progress
+            let cleanProgress = String(progressValue).replace('%', '').replace(',', '.').trim();
+            let progressNum = parseFloat(cleanProgress);
+
+            // Clean and parse Plan Progress (default to 0 if missing)
+            let cleanPlan = String(planValue || '0').replace('%', '').replace(',', '.').trim();
+            let planNum = parseFloat(cleanPlan);
 
             if (!isNaN(progressNum)) {
                 progressNum = Math.min(Math.max(progressNum, 0), 100);
@@ -565,18 +570,21 @@
                 // CONVERT PERCENTAGE TO DEGREES (0 - 360)
                 let degrees = (progressNum / 100) * 360;
                 
-                let color = '#00FF00'; 
-                if (progressNum < 50) {
-                    color = '#FF0000'; 
-                } else if (progressNum < 75) {
-                    color = '#FFFF00'; 
+                // === NEW COLOR RULE ===
+                let color = '#00FF00'; // Default Green
+                if (!isNaN(planNum)) {
+                    if (planNum > progressNum) {
+                        color = '#FF0000'; // Red if Plan is greater than Actual
+                    } else {
+                        color = '#00FF00'; // Green if Plan is less than or equal to Actual
+                    }
                 }
                 
                 const circleElement = document.querySelector('.circle-progress');
-                // Apply the 360-degree math
+                // Apply the 360-degree math and new color rule
                 circleElement.style.background = `conic-gradient(${color} ${degrees}deg, #444 0deg)`;
                 
-                log(`✅ Progress circle updated: ${progressNum}% -> ${degrees}deg (Color: ${color})`, 'success');
+                log(`✅ Progress circle updated: Act=${progressNum}%, Plan=${planNum}% -> ${degrees}deg (Color: ${color})`, 'success');
             } else {
                 log(`⚠️ Failed to parse progress value: ${progressValue}`, 'warn');
             }
@@ -650,14 +658,13 @@
                     }
                 }
 
-                if (row['ProgressSummary']) {
-                    log(`Updating progress circle with: ${row['ProgressSummary']}`, 'info');
-                    updateProgressCircle(row['ProgressSummary']);
+                // NEW: Pass BOTH ProgressSummary and Plan to determine the color
+                if (row['ProgressSummary'] !== undefined) {
+                    log(`Updating progress circle with: ${row['ProgressSummary']} (Plan: ${row['Plan']})`, 'info');
+                    updateProgressCircle(row['ProgressSummary'], row['Plan']);
                 }
 
-                // NEW: Dynamic Plan & Dev formatting
-                // Assumes columns in your sheet are named exactly 'Plan' and 'Dev'. 
-                // Adjust if your column headers are different.
+                // Dynamic Plan & Dev formatting
                 if (row['Plan'] !== undefined && row['Dev'] !== undefined) {
                     const formatPercent = (val) => String(val).includes('%') ? val : `${val}%`;
                     let planText = formatPercent(row['Plan']);
