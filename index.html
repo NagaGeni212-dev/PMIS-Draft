@@ -152,7 +152,15 @@
         .bottom-charts-row { display: grid; grid-template-columns: minmax(130px, 1.2fr) 3fr minmax(90px, 0.8fr); gap: 12px; height: 160px; }
         .progress-summary-card { background: var(--dark-blue); color: white; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         
-        .circle-progress { width: 65px; height: 65px; border-radius: 50%; background: conic-gradient(#00FF00 306deg, #444 0); display: flex; justify-content: center; align-items: center; margin-bottom: 5px; transition: background 0.3s ease; }
+        .circle-progress { 
+            width: 65px; 
+            height: 65px; 
+            border-radius: 50%; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            margin-bottom: 8px;
+        }
         .circle-inner { width: 52px; height: 52px; background: var(--dark-blue); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 12px; }
         
         .curve-s-card { background: var(--dark-blue); color: white; display: flex; flex-direction: column; justify-content: space-between; }
@@ -276,7 +284,7 @@
             <div class="bottom-charts-row">
                 <div class="card progress-summary-card">
                     <div style="font-size: 10px; margin-bottom: 5px;">Progress Summary<br>Mei 2026</div>
-                    <div class="circle-progress">
+                    <div class="circle-progress" id="progressCircle">
                         <div class="circle-inner" id="val-progress-summary" class="loading">Memuat...</div>
                     </div>
                     <div style="font-size: 8px; color: #AAA;">Plan: 92.358% | Dev: 3.752%</div>
@@ -516,8 +524,8 @@
                 // Formula: degrees = (progress / 100) * 360
                 const degrees = (progressNum / 100) * 360;
                 
-                // Update the circle gradient
-                const circleElement = document.querySelector('.circle-progress');
+                // Get the circle element by ID
+                const circleElement = document.getElementById('progressCircle');
                 
                 // Determine color based on progress
                 let color = '#00FF00'; // Green for good progress
@@ -527,7 +535,8 @@
                     color = '#FFFF00'; // Yellow for moderate progress
                 }
                 
-                circleElement.style.background = `conic-gradient(${color} ${degrees}deg, #444 0)`;
+                // Set the background using inline style
+                circleElement.style.background = `conic-gradient(${color} ${degrees}deg, #444 0deg)`;
                 
                 // Update the percentage text in the center
                 const innerElement = document.getElementById('val-progress-summary');
@@ -582,7 +591,6 @@
                     'val-contract': 'ContractValue',
                     'val-duration': 'ContractDuration',
                     'val-project-manager': 'ProjectManager',
-                    'val-progress-summary': 'ProgressSummary',
                     'val-spi': 'SPI',
                     'val-epi': 'EPI',
                     'val-cpi': 'CPI',
