@@ -365,8 +365,8 @@
                 ContractDuration: '24 Bulan',
                 ProjectManager: 'Daryanto Aloysius',
                 TargetFinish: '2026-12-31', 
-                ProgressSummary: '85.5%', // Actual
-                ProgressPlan: '92.358', // Plan
+                ProgressSummary: '85.5', // Removed the % here to simulate raw sheet data
+                ProgressPlan: '92.358', 
                 SPI: '1.02',
                 EPI: '0.95',
                 CPI: '1.10',
@@ -655,7 +655,15 @@
                 for (const [elementId, dataKey] of Object.entries(fieldsToUpdate)) {
                     const element = document.getElementById(elementId);
                     if (element && row[dataKey] !== undefined) {
-                        element.innerText = row[dataKey];
+                        
+                        let valueToDisplay = row[dataKey];
+                        
+                        // NEW FIX: Ensure ProgressSummary has a '%' symbol
+                        if (dataKey === 'ProgressSummary' && !String(valueToDisplay).includes('%')) {
+                            valueToDisplay = `${valueToDisplay}%`;
+                        }
+
+                        element.innerText = valueToDisplay;
                         element.classList.remove('loading', 'error');
                         updatedCount++;
                     }
