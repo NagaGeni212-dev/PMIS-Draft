@@ -677,7 +677,7 @@
                 let spi = planSummary !== 0 ? (actSummary / planSummary) : 0;
                 
                 // Calculate EPI = HPP_Real / HPP_ARP
-                let epi = hppArp !== 0 ? (hppReal / hppArp) : 0;
+                let epi = hppArp !== 0 ? (hppArp / hppReal) : 0;
                 
                 // Calculate CPI = 1 / HPP_Real * 100
                 let cpi = hppReal !== 0 ? ((1 / hppReal) * 100) : 0;
