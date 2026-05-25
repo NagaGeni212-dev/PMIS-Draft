@@ -152,7 +152,7 @@
         .bottom-charts-row { display: grid; grid-template-columns: minmax(130px, 1.2fr) 3fr minmax(90px, 0.8fr); gap: 12px; height: 160px; }
         .progress-summary-card { background: var(--dark-blue); color: white; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         
-        .circle-progress { width: 65px; height: 65px; border-radius: 50%; background: conic-gradient(#00FF00 306deg, #444 0); display: flex; justify-content: center; align-items: center; margin-bottom: 5px; transition: background 0.3s ease; }
+        .circle-progress { width: 65px; height: 65px; border-radius: 50%; background: conic-gradient(#00FF00 85.5%, #444 0); display: flex; justify-content: center; align-items: center; margin-bottom: 5px; transition: background 0.3s ease; }
         .circle-inner { width: 52px; height: 52px; background: var(--dark-blue); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 12px; }
         
         .curve-s-card { background: var(--dark-blue); color: white; display: flex; flex-direction: column; justify-content: space-between; }
@@ -512,10 +512,6 @@
                 // Clamp value between 0 and 100
                 progressNum = Math.min(Math.max(progressNum, 0), 100);
                 
-                // Convert 0-100% to 0-360 degrees
-                // Formula: degrees = (progress / 100) * 360
-                const degrees = (progressNum / 100) * 360;
-                
                 // Update the circle gradient
                 const circleElement = document.querySelector('.circle-progress');
                 
@@ -527,14 +523,9 @@
                     color = '#FFFF00'; // Yellow for moderate progress
                 }
                 
-                circleElement.style.background = `conic-gradient(${color} ${degrees}deg, #444 0)`;
+                circleElement.style.background = `conic-gradient(${color} ${progressNum}%, #444 0)`;
                 
-                // Update the percentage text in the center
-                const innerElement = document.getElementById('val-progress-summary');
-                innerElement.innerText = `${progressNum.toFixed(1)}%`;
-                innerElement.classList.remove('loading');
-                
-                log(`✅ Progress circle updated: ${progressNum}% = ${degrees}deg (Color: ${color})`, 'success');
+                log(`✅ Progress circle updated: ${progressNum}% (Color: ${color})`, 'success');
             } else {
                 log(`⚠️ Failed to parse progress value: ${progressValue}`, 'warn');
             }
