@@ -158,9 +158,9 @@
         .curve-s-card { background: var(--dark-blue); color: white; display: flex; flex-direction: column; justify-content: space-between; padding: 10px; }
         
         .kpi-column { display: flex; flex-direction: column; gap: 4px; font-size: 9px; font-weight: bold; text-align: center; color: white; justify-content: space-between; }
-        .kpi-tag { padding: 3px 0; border-radius: 2px; }
+        .kpi-tag { padding: 3px 0; border-radius: 2px; transition: background 0.3s ease; }
         .performa-box { background: var(--dark-blue); padding: 5px 0; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .warning-banner { background: #FFFF00; color: black; width: 100%; text-align: center; font-weight: bold; padding: 2px 0; }
+        .warning-banner { background: #666; color: white; width: 100%; text-align: center; font-weight: bold; padding: 2px 0; transition: background 0.3s ease, color 0.3s ease; }
 
         .grid-data { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 11px; margin-bottom: 8px; text-align: center; }
         .grid-label { color: #444; font-size: 10px; margin-bottom: 2px; }
@@ -288,12 +288,12 @@
                 </div>
 
                 <div class="kpi-column">
-                    <div class="kpi-tag" style="background:green;">SPI<br><span id="val-spi">1.02</span></div>
-                    <div class="kpi-tag" style="background:red;">EPI<br><span id="val-epi">0.95</span></div>
-                    <div class="kpi-tag" style="background:green;">CPI<br><span id="val-cpi">1.10</span></div>
+                    <div id="tag-spi" class="kpi-tag" style="background:#666;">SPI<br><span id="val-spi">-</span></div>
+                    <div id="tag-epi" class="kpi-tag" style="background:#666;">EPI<br><span id="val-epi">-</span></div>
+                    <div id="tag-cpi" class="kpi-tag" style="background:#666;">CPI<br><span id="val-cpi">-</span></div>
                     <div class="performa-box">
                         <div>PERFORMA</div>
-                        <div class="warning-banner">WARNING</div>
+                        <div id="val-performa" class="warning-banner">MEMUAT...</div>
                     </div>
                 </div>
             </div>
@@ -365,15 +365,12 @@
                 ContractDuration: '24 Bulan',
                 ProjectManager: 'Daryanto Aloysius',
                 TargetFinish: '2026-12-31', 
-                ProgressSummary: '85.5', // Removed the % here to simulate raw sheet data
-                ProgressPlan: '92.358', 
-                SPI: '1.02',
-                EPI: '0.95',
-                CPI: '1.10',
+                ProgressSummary: '85.5', // Actual
+                ProgressPlan: '92.358', // Plan
                 HB: '92.4%',
                 HPP_ARP: '88.2%',
                 RealProgress: '85.5%',
-                HPP_Real: '87.9%',
+                HPP_Real: '87.9%', // Used for CPI and EPI calculations
                 EAC: '101.2%',
                 CashIn: 'Rp 420 M',
                 DefisitSurplus: 'Rp 80 M',
@@ -630,15 +627,12 @@
                     monthYearElement.innerHTML = `Progress Summary<br>${currentMonthYear}`;
                 }
 
-                // 2. TEXT FIELDS UPDATE
+                // 2. TEXT FIELDS UPDATE (Removed SPI, EPI, CPI from this loop so we can handle them manually)
                 const fieldsToUpdate = {
                     'val-contract': 'ContractValue',
                     'val-duration': 'ContractDuration',
                     'val-project-manager': 'ProjectManager',
                     'val-progress-summary': 'ProgressSummary',
-                    'val-spi': 'SPI',
-                    'val-epi': 'EPI',
-                    'val-cpi': 'CPI',
                     'val-hb': 'HB',
                     'val-hpp-arp': 'HPP_ARP',
                     'val-real-progress': 'RealProgress',
@@ -658,7 +652,7 @@
                         
                         let valueToDisplay = row[dataKey];
                         
-                        // NEW FIX: Ensure ProgressSummary has a '%' symbol
+                        // Ensure ProgressSummary has a '%' symbol
                         if (dataKey === 'ProgressSummary' && !String(valueToDisplay).includes('%')) {
                             valueToDisplay = `${valueToDisplay}%`;
                         }
@@ -669,36 +663,76 @@
                     }
                 }
 
-                // 3. PROGRESS CIRCLE & DYNAMIC PLAN / DEV MATH
+                // --- HELPER FUNCTION TO PARSE NUMBERS ---
+                const parseToNum = (val) => parseFloat(String(val || '0').replace('%', '').replace(',', '.').trim()) || 0;
+
+                // 3. KPI CALCULATIONS (SPI, EPI, CPI)
+                let actSummary = parseToNum(row['ProgressSummary']);
+                let planSummary = parseToNum(row['ProgressPlan']);
+                
+                let hppReal = parseToNum(row['HPP_Real']);
+                let hppArp = parseToNum(row['HPP_ARP']);
+
+                // Calculate SPI = ProgressSummary / Progress Plan
+                let spi = planSummary !== 0 ? (actSummary / planSummary) : 0;
+                
+                // Calculate EPI = HPP_Real / HPP_ARP
+                let epi = hppArp !== 0 ? (hppReal / hppArp) : 0;
+                
+                // Calculate CPI = 1 / HPP_Real * 100
+                let cpi = hppReal !== 0 ? ((1 / hppReal) * 100) : 0;
+
+                // Update SPI DOM
+                document.getElementById('val-spi').innerText = spi.toFixed(2);
+                document.getElementById('tag-spi').style.background = spi < 1 ? 'red' : 'green';
+
+                // Update EPI DOM
+                document.getElementById('val-epi').innerText = epi.toFixed(2);
+                document.getElementById('tag-epi').style.background = epi < 1 ? 'red' : 'green';
+
+                // Update CPI DOM
+                document.getElementById('val-cpi').innerText = cpi.toFixed(2);
+                document.getElementById('tag-cpi').style.background = cpi < 1 ? 'red' : 'green';
+
+                // 4. PERFORMA BOX LOGIC
+                let performaBanner = document.getElementById('val-performa');
+                if (spi >= 1 && epi >= 1 && cpi >= 1) {
+                    performaBanner.innerText = 'EXCELLENT';
+                    performaBanner.style.background = 'green';
+                    performaBanner.style.color = 'white';
+                } else if (spi < 1 && epi < 1 && cpi < 1) {
+                    performaBanner.innerText = 'CRITICAL';
+                    performaBanner.style.background = 'red';
+                    performaBanner.style.color = 'white';
+                } else {
+                    performaBanner.innerText = 'WARNING';
+                    performaBanner.style.background = '#FFFF00'; // Yellow
+                    performaBanner.style.color = 'black';
+                }
+                
+                log(`✅ KPIs Calculated: SPI=${spi.toFixed(2)}, EPI=${epi.toFixed(2)}, CPI=${cpi.toFixed(2)}`, 'success');
+
+                // 5. PROGRESS CIRCLE & DYNAMIC PLAN / DEV MATH
                 if (row['ProgressSummary'] !== undefined && row['ProgressPlan'] !== undefined) {
                     
-                    // Trigger Circle Gradient
                     updateProgressCircle(row['ProgressSummary'], row['ProgressPlan']);
 
-                    // Calculate Dev = Actual - Plan
-                    let actualVal = parseFloat(String(row['ProgressSummary']).replace('%', '').replace(',', '.').trim()) || 0;
-                    let planVal = parseFloat(String(row['ProgressPlan']).replace('%', '').replace(',', '.').trim()) || 0;
+                    let devVal = actSummary - planSummary;
                     
-                    let devVal = actualVal - planVal;
-                    
-                    // Format output
                     const formatPercentStr = (str) => String(str).includes('%') ? str : `${str}%`;
                     let planText = formatPercentStr(row['ProgressPlan']);
                     
-                    // Add '+' sign if it's positive, format to 3 decimal places
                     let devSign = devVal > 0 ? '+' : '';
                     let devText = `${devSign}${devVal.toFixed(3)}%`;
                     
                     document.getElementById('val-plan-dev').innerText = `Plan: ${planText} | Dev: ${devText}`;
-                    log(`✅ Calculated Dev: Act(${actualVal}) - Plan(${planVal}) = ${devVal}`, 'success');
                 }
 
-                // 4. COUNTDOWN
+                // 6. COUNTDOWN
                 if (row['TargetFinish']) {
                     initCountdown(row['TargetFinish']);
                 }
 
-                log(`✅ Updated ${updatedCount}/${Object.keys(fieldsToUpdate).length} standard fields`, 'success');
             } catch (error) {
                 log(`Error updating dashboard: ${error.message}`, 'error');
                 showError('Failed to display data');
