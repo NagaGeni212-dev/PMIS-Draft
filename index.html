@@ -277,7 +277,7 @@
                     <div class="circle-progress">
                         <div class="circle-inner" id="val-progress-summary" class="loading">Memuat...</div>
                     </div>
-                    <div style="font-size: 8px; color: #AAA;">Plan: 92.358% | Dev: 3.752%</div>
+                    <div id="val-plan-dev" style="font-size: 8px; color: #AAA;">Plan: - | Dev: -</div>
                 </div>
 
                 <div class="card curve-s-card">
@@ -359,14 +359,15 @@
         // ===== CONFIGURATION =====
         const CONFIG = {
             APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbywJaArOqUh7hgEy4huCrGbg8Jtc7jiqVI5geR4COC09GjsI6-xxGHvXcy5tr_rNjGv/exec',
-            TIMEOUT: 10000, // 10 seconds
-            // Fallback/Demo data
+            TIMEOUT: 10000, 
             DEMO_DATA: {
                 ContractValue: 'Rp 500 Miliar',
                 ContractDuration: '24 Bulan',
                 ProjectManager: 'Daryanto Aloysius',
                 TargetFinish: '2026-12-31', 
                 ProgressSummary: '85.5%',
+                Plan: '92.358', // Added Plan Demo Data
+                Dev: '3.752',   // Added Dev Demo Data
                 SPI: '1.02',
                 EPI: '0.95',
                 CPI: '1.10',
@@ -478,7 +479,6 @@
         function initSCurveChart() {
             const ctx = document.getElementById('sCurveChart').getContext('2d');
             
-            // Sample data (can be updated dynamically later via fetchDashboardData)
             const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei'];
             const planData = [10, 25, 45, 70, 92.35];
             const actualData = [8, 20, 35, 60, 85.5]; 
@@ -554,15 +554,16 @@
             }
         }
 
-        // ===== UPDATE PROGRESS CIRCLE =====
+        // ===== UPDATE PROGRESS CIRCLE (0-100 to 0-360 Degrees) =====
         function updateProgressCircle(progressValue) {
-            let cleanValue = progressValue.replace('%', '').replace(',', '.').trim();
+            let cleanValue = String(progressValue).replace('%', '').replace(',', '.').trim();
             let progressNum = parseFloat(cleanValue);
 
             if (!isNaN(progressNum)) {
                 progressNum = Math.min(Math.max(progressNum, 0), 100);
                 
-                const circleElement = document.querySelector('.circle-progress');
+                // CONVERT PERCENTAGE TO DEGREES (0 - 360)
+                let degrees = (progressNum / 100) * 360;
                 
                 let color = '#00FF00'; 
                 if (progressNum < 50) {
@@ -571,9 +572,11 @@
                     color = '#FFFF00'; 
                 }
                 
-                circleElement.style.background = `conic-gradient(${color} ${progressNum}%, #444 0)`;
+                const circleElement = document.querySelector('.circle-progress');
+                // Apply the 360-degree math
+                circleElement.style.background = `conic-gradient(${color} ${degrees}deg, #444 0deg)`;
                 
-                log(`✅ Progress circle updated: ${progressNum}% (Color: ${color})`, 'success');
+                log(`✅ Progress circle updated: ${progressNum}% -> ${degrees}deg (Color: ${color})`, 'success');
             } else {
                 log(`⚠️ Failed to parse progress value: ${progressValue}`, 'warn');
             }
@@ -640,7 +643,7 @@
                 let updatedCount = 0;
                 for (const [elementId, dataKey] of Object.entries(fieldsToUpdate)) {
                     const element = document.getElementById(elementId);
-                    if (element && row[dataKey]) {
+                    if (element && row[dataKey] !== undefined) {
                         element.innerText = row[dataKey];
                         element.classList.remove('loading', 'error');
                         updatedCount++;
@@ -650,6 +653,18 @@
                 if (row['ProgressSummary']) {
                     log(`Updating progress circle with: ${row['ProgressSummary']}`, 'info');
                     updateProgressCircle(row['ProgressSummary']);
+                }
+
+                // NEW: Dynamic Plan & Dev formatting
+                // Assumes columns in your sheet are named exactly 'Plan' and 'Dev'. 
+                // Adjust if your column headers are different.
+                if (row['Plan'] !== undefined && row['Dev'] !== undefined) {
+                    const formatPercent = (val) => String(val).includes('%') ? val : `${val}%`;
+                    let planText = formatPercent(row['Plan']);
+                    let devText = formatPercent(row['Dev']);
+                    
+                    document.getElementById('val-plan-dev').innerText = `Plan: ${planText} | Dev: ${devText}`;
+                    log(`✅ Updated Plan/Dev text to: Plan: ${planText} | Dev: ${devText}`, 'success');
                 }
 
                 if (row['TargetFinish']) {
@@ -678,10 +693,11 @@
         window.addEventListener('load', () => {
             log('🔄 Window loaded, initializing...', 'info');
             
-            // Initialize chart, countdown, and progress circle with demo data first
             initSCurveChart();
             initCountdown(CONFIG.DEMO_DATA.TargetFinish);
-            updateProgressCircle(CONFIG.DEMO_DATA.ProgressSummary);
+            
+            // Trigger an initial update using Demo Data so the 360-circle and Plan/Dev logic fires
+            updateDashboard(CONFIG.DEMO_DATA);
             
             // Delay slightly to ensure DOM is ready before trying to fetch real data
             setTimeout(fetchDashboardData, 500);
