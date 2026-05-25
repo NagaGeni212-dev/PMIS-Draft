@@ -152,12 +152,10 @@
         .bottom-charts-row { display: grid; grid-template-columns: minmax(130px, 1.2fr) 3fr minmax(90px, 0.8fr); gap: 12px; height: 160px; }
         .progress-summary-card { background: var(--dark-blue); color: white; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         
-        .circle-progress { width: 65px; height: 65px; border-radius: 50%; background: conic-gradient(#00FF00 96%, #444 0); display: flex; justify-content: center; align-items: center; margin-bottom: 5px; }
-        .circle-inner { width: 52px; height: 52px; background: var(--dark-blue); border-radius: 50%; display: flex; justify-content: center; align-items: center; }
+        .circle-progress { width: 65px; height: 65px; border-radius: 50%; background: conic-gradient(#00FF00 85.5%, #444 0); display: flex; justify-content: center; align-items: center; margin-bottom: 5px; transition: background 0.3s ease; }
+        .circle-inner { width: 52px; height: 52px; background: var(--dark-blue); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 12px; }
         
-        .curve-s-card { background: var(--dark-blue); color: white; display: flex; flex-direction: column; justify-content: space-between; }
-        .dummy-chart { flex: 1; display: flex; align-items: flex-end; gap: 6px; padding-top: 10px; border-left: 2px solid white; border-bottom: 2px solid white; margin: 5px 10px; }
-        .bar { flex: 1; background: #00FFFF; min-width: 15px; }
+        .curve-s-card { background: var(--dark-blue); color: white; display: flex; flex-direction: column; justify-content: space-between; padding: 10px; }
         
         .kpi-column { display: flex; flex-direction: column; gap: 4px; font-size: 9px; font-weight: bold; text-align: center; color: white; justify-content: space-between; }
         .kpi-tag { padding: 3px 0; border-radius: 2px; }
@@ -284,12 +282,8 @@
 
                 <div class="card curve-s-card">
                     <div class="card-header" style="background:none; text-align:left; margin:0; padding:0;">KURVA S</div>
-                    <div class="dummy-chart">
-                        <div class="bar" style="height: 20%;"></div>
-                        <div class="bar" style="height: 40%;"></div>
-                        <div class="bar" style="height: 65%;"></div>
-                        <div class="bar" style="height: 85%;"></div>
-                        <div class="bar" style="height: 96%;"></div>
+                    <div style="position: relative; height: 120px; width: 100%; margin-top: 5px;">
+                        <canvas id="sCurveChart"></canvas>
                     </div>
                 </div>
 
@@ -342,6 +336,8 @@
     <div class="debug-panel" id="debugPanel"></div>
 
     <script src="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <script>
         // ===== DEBUG UTILITIES =====
         const DEBUG = true;
@@ -369,7 +365,7 @@
                 ContractValue: 'Rp 500 Miliar',
                 ContractDuration: '24 Bulan',
                 ProjectManager: 'Daryanto Aloysius',
-                TargetFinish: '2026-12-31', // Format: YYYY-MM-DD
+                TargetFinish: '2026-12-31', 
                 ProgressSummary: '85.5%',
                 SPI: '1.02',
                 EPI: '0.95',
@@ -414,18 +410,15 @@
             let targetDate;
             
             if (targetFinishDate) {
-                // Parse the target finish date from spreadsheet (format: YYYY-MM-DD or similar)
                 targetDate = new Date(targetFinishDate);
                 log(`📅 Using TargetFinish from spreadsheet: ${targetFinishDate}`, 'info');
                 
-                // Validate the date
                 if (isNaN(targetDate.getTime())) {
                     log(`⚠️ Invalid TargetFinish date: ${targetFinishDate}, using fallback...`, 'warn');
                     targetDate = new Date();
                     targetDate.setDate(targetDate.getDate() + 226);
                 }
             } else {
-                // Fallback to 226 days from now if no target date provided
                 targetDate = new Date();
                 targetDate.setDate(targetDate.getDate() + 226);
                 log('📅 Using fallback countdown (226 days)', 'info');
@@ -433,7 +426,6 @@
             
             targetDate.setHours(23, 59, 59, 999);
             
-            // Check if countdown is already running with the same target date
             if (countdownState.countdownStarted && 
                 countdownState.currentTargetDate && 
                 countdownState.currentTargetDate.getTime() === targetDate.getTime()) {
@@ -441,13 +433,11 @@
                 return;
             }
             
-            // Clear existing interval if any
             if (countdownState.intervalId !== null) {
                 clearInterval(countdownState.intervalId);
                 log('🛑 Cleared previous countdown interval', 'info');
             }
             
-            // Store the current target date
             countdownState.currentTargetDate = targetDate;
             countdownState.countdownStarted = true;
 
@@ -482,6 +472,68 @@
             log('✅ Countdown initialized and running', 'success');
         }
 
+        // ===== S-CURVE CHART INITIALIZATION =====
+        let sCurveChart;
+
+        function initSCurveChart() {
+            const ctx = document.getElementById('sCurveChart').getContext('2d');
+            
+            // Sample data (can be updated dynamically later via fetchDashboardData)
+            const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei'];
+            const planData = [10, 25, 45, 70, 92.35];
+            const actualData = [8, 20, 35, 60, 85.5]; 
+
+            sCurveChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Plan (%)',
+                            data: planData,
+                            borderColor: '#FFC000', 
+                            backgroundColor: 'rgba(255, 192, 0, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4, 
+                            fill: true
+                        },
+                        {
+                            label: 'Actual (%)',
+                            data: actualData,
+                            borderColor: '#00FF00', 
+                            backgroundColor: 'rgba(0, 255, 0, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: { color: 'white', boxWidth: 10, font: { size: 9 } }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { color: '#AAA', font: { size: 9 }, stepSize: 25 },
+                            grid: { color: 'rgba(255,255,255,0.1)' }
+                        },
+                        x: {
+                            ticks: { color: '#AAA', font: { size: 9 } },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+            log('✅ S-Curve Chart initialized', 'success');
+        }
+
         // ===== FETCH WITH TIMEOUT =====
         async function fetchWithTimeout(url, options = {}) {
             const { timeout = 10000 } = options;
@@ -499,6 +551,31 @@
             } catch (error) {
                 clearTimeout(id);
                 throw error;
+            }
+        }
+
+        // ===== UPDATE PROGRESS CIRCLE =====
+        function updateProgressCircle(progressValue) {
+            let cleanValue = progressValue.replace('%', '').replace(',', '.').trim();
+            let progressNum = parseFloat(cleanValue);
+
+            if (!isNaN(progressNum)) {
+                progressNum = Math.min(Math.max(progressNum, 0), 100);
+                
+                const circleElement = document.querySelector('.circle-progress');
+                
+                let color = '#00FF00'; 
+                if (progressNum < 50) {
+                    color = '#FF0000'; 
+                } else if (progressNum < 75) {
+                    color = '#FFFF00'; 
+                }
+                
+                circleElement.style.background = `conic-gradient(${color} ${progressNum}%, #444 0)`;
+                
+                log(`✅ Progress circle updated: ${progressNum}% (Color: ${color})`, 'success');
+            } else {
+                log(`⚠️ Failed to parse progress value: ${progressValue}`, 'warn');
             }
         }
 
@@ -570,7 +647,11 @@
                     }
                 }
 
-                // Update countdown with TargetFinish from spreadsheet (only if different from current)
+                if (row['ProgressSummary']) {
+                    log(`Updating progress circle with: ${row['ProgressSummary']}`, 'info');
+                    updateProgressCircle(row['ProgressSummary']);
+                }
+
                 if (row['TargetFinish']) {
                     log(`Updating countdown with TargetFinish: ${row['TargetFinish']}`, 'info');
                     initCountdown(row['TargetFinish']);
@@ -597,10 +678,12 @@
         window.addEventListener('load', () => {
             log('🔄 Window loaded, initializing...', 'info');
             
-            // Initialize countdown with demo data
+            // Initialize chart, countdown, and progress circle with demo data first
+            initSCurveChart();
             initCountdown(CONFIG.DEMO_DATA.TargetFinish);
+            updateProgressCircle(CONFIG.DEMO_DATA.ProgressSummary);
             
-            // Delay slightly to ensure DOM is ready
+            // Delay slightly to ensure DOM is ready before trying to fetch real data
             setTimeout(fetchDashboardData, 500);
         });
 
