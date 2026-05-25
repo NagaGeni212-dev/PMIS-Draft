@@ -152,8 +152,8 @@
         .bottom-charts-row { display: grid; grid-template-columns: minmax(130px, 1.2fr) 3fr minmax(90px, 0.8fr); gap: 12px; height: 160px; }
         .progress-summary-card { background: var(--dark-blue); color: white; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         
-        .circle-progress { width: 65px; height: 65px; border-radius: 50%; background: conic-gradient(#00FF00 85.5%, #444 0); display: flex; justify-content: center; align-items: center; margin-bottom: 5px; transition: background 0.3s ease; }
-        .circle-inner { width: 52px; height: 52px; background: var(--dark-blue); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 12px; }
+        .circle-progress { width: 65px; height: 65px; border-radius: 50%; background: conic-gradient(#00FF00 96%, #444 0); display: flex; justify-content: center; align-items: center; margin-bottom: 5px; }
+        .circle-inner { width: 52px; height: 52px; background: var(--dark-blue); border-radius: 50%; display: flex; justify-content: center; align-items: center; }
         
         .curve-s-card { background: var(--dark-blue); color: white; display: flex; flex-direction: column; justify-content: space-between; }
         .dummy-chart { flex: 1; display: flex; align-items: flex-end; gap: 6px; padding-top: 10px; border-left: 2px solid white; border-bottom: 2px solid white; margin: 5px 10px; }
@@ -502,35 +502,6 @@
             }
         }
 
-        // ===== UPDATE PROGRESS CIRCLE =====
-        function updateProgressCircle(progressValue) {
-            // Clean the progress value: remove '%', spaces, replace ',' with '.'
-            let cleanValue = progressValue.replace('%', '').replace(',', '.').trim();
-            let progressNum = parseFloat(cleanValue);
-
-            if (!isNaN(progressNum)) {
-                // Clamp value between 0 and 100
-                progressNum = Math.min(Math.max(progressNum, 0), 100);
-                
-                // Update the circle gradient
-                const circleElement = document.querySelector('.circle-progress');
-                
-                // Determine color based on progress
-                let color = '#00FF00'; // Green for good progress
-                if (progressNum < 50) {
-                    color = '#FF0000'; // Red for low progress
-                } else if (progressNum < 75) {
-                    color = '#FFFF00'; // Yellow for moderate progress
-                }
-                
-                circleElement.style.background = `conic-gradient(${color} ${progressNum}%, #444 0)`;
-                
-                log(`✅ Progress circle updated: ${progressNum}% (Color: ${color})`, 'success');
-            } else {
-                log(`⚠️ Failed to parse progress value: ${progressValue}`, 'warn');
-            }
-        }
-
         // ===== IMPROVED DATA FETCHING =====
         async function fetchDashboardData() {
             log('🚀 Starting data fetch...', 'info');
@@ -599,12 +570,6 @@
                     }
                 }
 
-                // Update progress circle with ProgressSummary
-                if (row['ProgressSummary']) {
-                    log(`Updating progress circle with: ${row['ProgressSummary']}`, 'info');
-                    updateProgressCircle(row['ProgressSummary']);
-                }
-
                 // Update countdown with TargetFinish from spreadsheet (only if different from current)
                 if (row['TargetFinish']) {
                     log(`Updating countdown with TargetFinish: ${row['TargetFinish']}`, 'info');
@@ -634,9 +599,6 @@
             
             // Initialize countdown with demo data
             initCountdown(CONFIG.DEMO_DATA.TargetFinish);
-            
-            // Initialize progress circle with demo data
-            updateProgressCircle(CONFIG.DEMO_DATA.ProgressSummary);
             
             // Delay slightly to ensure DOM is ready
             setTimeout(fetchDashboardData, 500);
