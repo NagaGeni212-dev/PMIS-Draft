@@ -611,7 +611,7 @@
                 let hppArp = parseToNum(row['HPPARP']);
 
                 let spi = planSummary !== 0 ? (actSummary / planSummary) : 0;
-                let epi = hppArp !== 0 ? (hppReal / hppArp) : 0;
+                let epi = hppArp !== 0 ? (hppArp / hppReal) : 0;
                 let cpi = hppReal !== 0 ? ((1 / hppReal) * 100) : 0;
 
                 document.getElementById('val-spi').innerText = spi.toFixed(2);
