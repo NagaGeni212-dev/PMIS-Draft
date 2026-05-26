@@ -252,7 +252,7 @@
             
             <div class="card card-mini-map">
                 <div class="mini-map-container">
-                    <iframe src="https://maps.google.com/maps?q=-1.1274,116.6856&z=13&t=h&output=embed" allowfullscreen="" loading="lazy"></iframe>
+                    <iframe id="val-gmaps" src="https://maps.google.com/maps?q=-1.1274,116.6856&z=14&output=embed" allowfullscreen="" loading="lazy"></iframe>
                 </div>
             </div>
             
@@ -366,6 +366,8 @@
                 ProjectManager: 'Daryanto Aloysius',
                 TargetFinish: '2026-12-31', 
                 CityName: 'Balikpapan',
+                Lat: '-1.1274',
+                Long: '116.6856',
                 ProgressSummary: '85.5', 
                 ProgressPlan: '92.358', 
                 HB: '92.4%',
@@ -694,7 +696,7 @@
                 let hppArp = parseToNum(row['HPP_ARP']);
 
                 let spi = planSummary !== 0 ? (actSummary / planSummary) : 0;
-                let epi = hppArp !== 0 ? (hppReal / hppArp) : 0;
+                let epi = hppArp !== 0 ? (hppArp / hppReal) : 0;
                 let cpi = hppReal !== 0 ? ((1 / hppReal) * 100) : 0;
 
                 document.getElementById('val-spi').innerText = spi.toFixed(2);
@@ -741,6 +743,17 @@
                 // 7. COUNTDOWN
                 if (row['TargetFinish']) {
                     initCountdown(row['TargetFinish']);
+                }
+
+                // 8. DYNAMIC GMAPS IFRAME
+                if (row['Lat'] !== undefined && row['Long'] !== undefined) {
+                    const lat = row['Lat'];
+                    const long = row['Long'];
+                    const gmapsIframe = document.getElementById('val-gmaps');
+                    if (gmapsIframe) {
+                        gmapsIframe.src = `https://maps.google.com/maps?q=${lat},${long}&z=14&output=embed`;
+                        log(`✅ GMaps updated to Lat: ${lat}, Long: ${long}`, 'success');
+                    }
                 }
 
             } catch (error) {
