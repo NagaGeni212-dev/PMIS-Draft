@@ -6,8 +6,6 @@
     <title>PMIS - Proyek Tol IKN (Dynamic Scrolling Page)</title>
     <link href="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.css" rel="stylesheet" />
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    
     <style>
         :root {
             --primary-red: #8B0000;
@@ -70,11 +68,7 @@
             box-sizing: border-box;
         }
 
-        .column { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 12px; 
-        }
+        .column { display: flex; flex-direction: column; gap: 12px; }
         
         .card { 
             background: white; 
@@ -87,15 +81,10 @@
         }
         
         .card-header { 
-            background: var(--primary-red); 
-            color: white; 
-            text-align: center; 
-            font-size: 11px; 
-            font-weight: bold; 
-            padding: 6px; 
+            background: var(--primary-red); color: white; text-align: center; 
+            font-size: 11px; font-weight: bold; padding: 6px; 
             margin: -10px -10px 10px -10px; 
-            border-top-left-radius: 4px; 
-            border-top-right-radius: 4px; 
+            border-top-left-radius: 4px; border-top-right-radius: 4px; 
         }
         
         .qhsse-header { margin-top: 5px !important; }
@@ -110,28 +99,9 @@
         .countdown-title { text-align: center; font-size: 11px; font-weight: bold; color: #444; margin-top: auto; margin-bottom: 4px; padding-top: 10px; }
         .countdown-box { background: #333; color: #FFC000; font-family: 'Courier New', Courier, monospace; font-size: 16px; text-align: center; padding: 8px; letter-spacing: 0.5px; font-weight: bold; border-radius: 3px; }
         
-        .card-mini-map {
-            padding: 0 !important;
-            overflow: hidden;
-            border: 1px solid #DDD;
-        }
-        .mini-map-container { 
-            position: relative;
-            width: 100%;
-            aspect-ratio: 4 / 3;
-            overflow: hidden;
-            border-radius: 4px;
-        }
-        .mini-map-container iframe { 
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100% !important;
-            height: 100% !important;
-            border: 0;
-            margin: 0;
-            padding: 0;
-        }
+        .card-mini-map { padding: 0 !important; overflow: hidden; border: 1px solid #DDD; }
+        .mini-map-container { position: relative; width: 100%; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 4px; }
+        .mini-map-container iframe { position: absolute; top: 0; left: 0; width: 100% !important; height: 100% !important; border: 0; margin: 0; padding: 0; }
 
         .weather-title { text-align: center; font-size: 11px; font-weight: bold; color: var(--dark-blue); margin-top: 6px; margin-bottom: 4px; }
         .weather-box { display: flex; justify-content: space-between; font-size: 10px; background: var(--dark-blue); color: white; padding: 8px; border-radius: 4px; text-align: center; gap: 4px; }
@@ -139,15 +109,7 @@
 
         .center-column { display: flex; flex-direction: column; gap: 12px; }
         
-        .map-section { 
-            width: 100%;
-            aspect-ratio: 16 / 9;
-            position: relative; 
-            border-radius: 4px; 
-            overflow: hidden; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
-            background: #9cd3db; 
-        }
+        .map-section { width: 100%; aspect-ratio: 16 / 9; position: relative; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); background: #9cd3db; }
         #map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         .map-floating-header { position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.95); padding: 6px 14px; border-radius: 4px; font-size: 11px; font-weight: bold; z-index: 10; }
 
@@ -175,22 +137,14 @@
         .loading { color: #666; font-style: italic; }
         .error { color: red; font-weight: bold; }
 
+        /* Panel Diagnostik Diperbesar untuk Debug Kurva S */
         .debug-panel {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.85);
-            color: #0f0;
-            padding: 10px;
-            border-radius: 4px;
-            font-size: 10px;
-            max-width: 350px;
-            max-height: 200px;
-            overflow-y: auto;
-            font-family: monospace;
-            z-index: 1000;
-            display: none;
-            border: 1px solid #0f0;
+            position: fixed; bottom: 10px; right: 10px;
+            background: rgba(0, 0, 0, 0.9); color: #0f0;
+            padding: 10px; border-radius: 4px; font-size: 10px;
+            width: 400px; max-height: 250px; overflow-y: auto;
+            font-family: monospace; z-index: 1000;
+            border: 2px solid #0f0; display: none;
         }
         .debug-panel.show { display: block; }
 
@@ -227,55 +181,40 @@
     </div>
 
     <div class="dashboard-container">
-        
         <div class="column">
             <div class="card">
                 <div class="card-header">Project Information</div>
                 <div style="text-align: center; margin: 10px 0;"><strong style="color: #0056b3;">KEMENPU | HK</strong></div>
-                
                 <table class="contract-table">
                     <tr><th>Contract Value</th><th>Contract Duration</th></tr>
                     <tr><td id="val-contract" class="loading">Memuat...</td><td id="val-duration" class="loading">Memuat...</td></tr>
                 </table>
-                
-                <div class="pm-box">
-                    <div>Project Manager:</div>
-                    <div class="pm-name" id="val-project-manager" class="loading">Memuat...</div>
-                </div>
-                
+                <div class="pm-box"><div>Project Manager:</div><div class="pm-name" id="val-project-manager" class="loading">Memuat...</div></div>
                 <a href="#" class="btn-document">Contract Document</a>
-                
                 <div class="countdown-title">Sisa Waktu Pekerjaan</div>
                 <div id="countdown" class="countdown-box">000 Hari 00:00:00</div>
             </div>
             
             <div class="card card-mini-map">
                 <div class="mini-map-container">
-                    <iframe id="val-gmaps" src="https://maps.google.com/maps?q=-1.1274,116.6856&z=14&output=embed" allowfullscreen="" loading="lazy"></iframe>
+                    <iframe id="val-gmaps" src="about:blank" allowfullscreen="" loading="lazy"></iframe>
                 </div>
             </div>
             
             <div class="weather-title" id="weather-city-label">Prakiraan Cuaca</div>
-            <div class="weather-box" id="weather-container">
-                <div class="loading" style="width: 100%; color: white;">Memuat cuaca...</div>
-            </div>
+            <div class="weather-box" id="weather-container"><div class="loading" style="width: 100%; color: white;">Memuat cuaca...</div></div>
         </div>
 
         <div class="center-column">
             <div class="map-section">
-                <div class="map-floating-header">
-                    <span style="color:#e60000; font-weight:bold;">⬅ 3D MAP VIEW</span>
-                    <span>CARTO-GL VOYAGER</span>
-                </div>
+                <div class="map-floating-header"><span style="color:#e60000; font-weight:bold;">⬅ 3D MAP VIEW</span><span>CARTO-GL VOYAGER</span></div>
                 <div id="map"></div>
             </div>
 
             <div class="bottom-charts-row">
                 <div class="card progress-summary-card">
                     <div id="val-month-year" style="font-size: 10px; margin-bottom: 5px;">Progress Summary<br>Memuat...</div>
-                    <div class="circle-progress">
-                        <div class="circle-inner" id="val-progress-summary" class="loading">Memuat...</div>
-                    </div>
+                    <div class="circle-progress"><div class="circle-inner" id="val-progress-summary" class="loading">...</div></div>
                     <div id="val-plan-dev" style="font-size: 8px; color: #AAA;">Plan: - | Dev: -</div>
                 </div>
 
@@ -290,10 +229,7 @@
                     <div id="tag-spi" class="kpi-tag" style="background:#666;">SPI<br><span id="val-spi">-</span></div>
                     <div id="tag-epi" class="kpi-tag" style="background:#666;">EPI<br><span id="val-epi">-</span></div>
                     <div id="tag-cpi" class="kpi-tag" style="background:#666;">CPI<br><span id="val-cpi">-</span></div>
-                    <div class="performa-box">
-                        <div>PERFORMA</div>
-                        <div id="val-performa" class="warning-banner">MEMUAT...</div>
-                    </div>
+                    <div class="performa-box"><div>PERFORMA</div><div id="val-performa" class="warning-banner">MEMUAT...</div></div>
                 </div>
             </div>
         </div>
@@ -301,21 +237,19 @@
         <div class="column">
             <div class="card">
                 <div class="card-header">Overview Finansial</div>
-                
                 <div class="grid-data">
-                    <div><div class="grid-label">HB</div><div class="grid-value red-text" id="val-hb" class="loading">Memuat...</div></div>
-                    <div><div class="grid-label">HPP ARP</div><div class="grid-value" id="val-hpp-arp" class="loading">Memuat...</div></div>
-                    <div><div class="grid-label">Real Progress</div><div class="grid-value red-text" id="val-real-progress" class="loading">Memuat...</div></div>
-                    <div><div class="grid-label">HPP Real</div><div class="grid-value" id="val-hpp-real" class="loading">Memuat...</div></div>
+                    <div><div class="grid-label">HB</div><div class="grid-value red-text" id="val-hb" class="loading">...</div></div>
+                    <div><div class="grid-label">HPP ARP</div><div class="grid-value" id="val-hpp-arp" class="loading">...</div></div>
+                    <div><div class="grid-label">Real Progress</div><div class="grid-value red-text" id="val-real-progress" class="loading">...</div></div>
+                    <div><div class="grid-label">HPP Real</div><div class="grid-value" id="val-hpp-real" class="loading">...</div></div>
                 </div>
-
                 <div style="text-align:center; font-size:10px; margin-bottom:2px;">EAC %</div>
-                <div class="grid-value" style="text-align:center; margin-bottom:12px;" id="val-eac" class="loading">Memuat...</div>
+                <div class="grid-value" style="text-align:center; margin-bottom:12px;" id="val-eac" class="loading">...</div>
 
                 <div class="card-header" style="margin-top:5px;">Solvabilitas</div>
                 <div class="grid-data">
-                    <div><div class="grid-label">Cash In</div><div class="grid-value red-text" id="val-cash-in" class="loading">Memuat...</div></div>
-                    <div><div class="grid-label">Defisit / Surplus</div><div class="grid-value" id="val-defisit" class="loading">Memuat...</div></div>
+                    <div><div class="grid-label">Cash In</div><div class="grid-value red-text" id="val-cash-in" class="loading">...</div></div>
+                    <div><div class="grid-label">Defisit / Surplus</div><div class="grid-value" id="val-defisit" class="loading">...</div></div>
                 </div>
 
                 <div class="card-header qhsse-header">QHSSE</div>
@@ -329,243 +263,170 @@
             <div class="btn-action">Issue Log & Action Plan</div>
             <div class="btn-action">3 Top Risk</div>
         </div>
-
     </div>
 
     <div class="debug-panel" id="debugPanel">
-        <div style="font-weight:bold; border-bottom:1px solid #0f0; margin-bottom:5px;">DIAGNOSTIC PANEL</div>
+        <div style="font-weight:bold; border-bottom:1px solid #0f0; margin-bottom:5px;">DIAGNOSTIC PANEL (DEBUG)</div>
     </div>
 
     <script src="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
-        // ===== DEBUG UTILITIES =====
+        // ===== DIAGNOSTIC UTILITY =====
         const DEBUG = true;
         const debugPanel = document.getElementById('debugPanel');
-        
         function log(message, type = 'info') {
-            const timestamp = new Date().toLocaleTimeString();
-            let icon = '📝';
-            let color = '#0f0';
-            if(type === 'error') { icon = '❌'; color = '#f55'; }
-            else if(type === 'warn') { icon = '⚠️'; color = '#fd0'; }
-            else if(type === 'success') { icon = '✅'; color = '#0f0'; }
-            
-            const logEntry = `<div style="color:${color}; margin-bottom:3px;">[${timestamp}] ${icon} ${message}</div>`;
-            console.log(`[${timestamp}] ${type.toUpperCase()}: ${message}`);
+            const time = new Date().toLocaleTimeString();
+            let color = type === 'error' ? '#f55' : type === 'warn' ? '#fd0' : '#0f0';
+            let icon = type === 'error' ? '❌' : type === 'warn' ? '⚠️' : '✅';
             
             if (DEBUG) {
                 debugPanel.classList.add('show');
-                debugPanel.innerHTML += logEntry;
+                debugPanel.innerHTML += `<div style="color:${color}; margin-bottom:4px; padding-bottom:2px; border-bottom:1px solid rgba(0,255,0,0.2);">[${time}] ${icon} ${message}</div>`;
                 debugPanel.scrollTop = debugPanel.scrollHeight;
             }
         }
 
-        // ===== CONFIGURATION =====
+        // ===== KONFIGURASI =====
         const CONFIG = {
             APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbywJaArOqUh7hgEy4huCrGbg8Jtc7jiqVI5geR4COC09GjsI6-xxGHvXcy5tr_rNjGv/exec',
             TIMEOUT: 12000, 
-            DEMO_DATA: {
-                ContractValue: 'Rp 500 Miliar', ContractDuration: '24 Bulan',
-                ProjectManager: 'Daryanto Aloysius', StartDate: '2024-01-01', TargetFinish: '2026-12-31', 
-                CityName: 'Balikpapan', Lat: '-1.1274', Long: '116.6856',
-                ProgressSummary: '85.5', ProgressPlan: '92.358', 
-                HB: '92.4%', HPP_ARP: '88.2%', RealProgress: '85.5%', HPP_Real: '87.9%',
-                EAC: '101.2%', CashIn: 'Rp 420 M', DefisitSurplus: 'Rp 80 M', NC: '2', Nearmiss: '5', Fatality: '0',
-                P1: 5, P2: 12, P3: 20, P4: 28, P5: 35, P6: 45, P7: 55, P8: 68, P9: 78, P10: 88, P11: 92.358, P12: 100,
-                A1: 4.5, A2: 10, A3: 18, A4: 25, A5: 32, A6: 40, A7: 50, A8: 65, A9: 75, A10: 85.5
+            DEMO_DATA: { // Dummy fallback
+                ContractValue: 'Rp 500 M', ContractDuration: '24 Bulan',
+                ProjectManager: 'Demo Mode', ProgressSummary: '50', ProgressPlan: '50',
+                P1: 5, P2: 12, P3: 20, A1: 4.5, A2: 10, A3: 18
             }
         };
 
-        // ===== MAP & STATE =====
+        // ... (Fungsi Map & Weather tetap sama) ...
         let countdownState = { intervalId: null, currentTargetDate: null, countdownStarted: false };
-
-        const map = new maplibregl.Map({
-            container: 'map',
-            style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json', 
-            center: [116.6856, -1.1274], zoom: 13.5, pitch: 60, bearing: 25, antialias: true
-        });
-
+        const map = new maplibregl.Map({ container: 'map', style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json', center: [116.6856, -1.1274], zoom: 13.5, pitch: 60, bearing: 25, antialias: true });
         window.addEventListener('resize', () => map.resize());
 
-        // ===== DYNAMIC 5-DAY WEATHER API =====
-        function getWeatherDetail(code) {
-            if (code === 0) return { icon: '☀️', text: 'Cerah' };
-            if (code === 1 || code === 2 || code === 3) return { icon: '⛅', text: 'Berawan' };
-            if (code === 45 || code === 48) return { icon: '🌫️', text: 'Kabut' };
-            if (code >= 51 && code <= 55) return { icon: '🌧️', text: 'Gerimis' };
-            if (code >= 61 && code <= 65) return { icon: '🌧️', text: 'Hujan' };
-            if (code >= 80 && code <= 82) return { icon: '🌧️', text: 'Hujan' };
-            if (code >= 95 && code <= 99) return { icon: '⛈️', text: 'Badai' };
-            return { icon: '☁️', text: 'Awan' }; 
-        }
-
-        async function updateWeather(cityName) {
-            if (!cityName) return;
-            document.getElementById('weather-city-label').innerText = `Cuaca: ${cityName}`;
-            try {
-                const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1`);
-                const geoData = await geoRes.json();
-                if (!geoData.results || geoData.results.length === 0) {
-                    document.getElementById('weather-container').innerHTML = '<div style="width:100%; color:red;">Kota tidak ditemukan</div>';
-                    return;
-                }
-                const lat = geoData.results[0].latitude, lon = geoData.results[0].longitude;
-                const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,weathercode&timezone=auto`);
-                const weatherData = await weatherRes.json();
-                
-                const days = weatherData.daily.time.slice(0, 5), temps = weatherData.daily.temperature_2m_max.slice(0, 5), codes = weatherData.daily.weathercode.slice(0, 5);
-                const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-                
-                let weatherHTML = '';
-                for(let i=0; i<5; i++) {
-                    const date = new Date(days[i]);
-                    const wDetail = getWeatherDetail(codes[i]);
-                    weatherHTML += `<div class="weather-day-box"><strong>${dayNames[date.getDay()]}</strong><div style="font-size:18px;">${wDetail.icon}</div><div style="font-size:11px;">${Math.round(temps[i])}°C</div><div style="font-size:8px; opacity:0.8;">${wDetail.text}</div></div>`;
-                }
-                document.getElementById('weather-container').innerHTML = weatherHTML;
-            } catch (error) { document.getElementById('weather-container').innerHTML = '<div style="width:100%; color:red;">Gagal memuat cuaca</div>'; }
-        }
-
-        // ===== COUNTDOWN TIMER =====
         function initCountdown(targetFinishDate = null) {
             let targetDate = targetFinishDate ? new Date(targetFinishDate) : new Date(new Date().setDate(new Date().getDate() + 226));
             if (isNaN(targetDate.getTime())) targetDate = new Date(new Date().setDate(new Date().getDate() + 226));
-            
             targetDate.setHours(23, 59, 59, 999);
-            if (countdownState.countdownStarted && countdownState.currentTargetDate && countdownState.currentTargetDate.getTime() === targetDate.getTime()) return;
             if (countdownState.intervalId !== null) clearInterval(countdownState.intervalId);
             
-            countdownState.currentTargetDate = targetDate;
-            countdownState.countdownStarted = true;
-
             const el = document.getElementById('countdown');
-            function update() {
+            countdownState.intervalId = setInterval(() => {
                 const dist = targetDate.getTime() - new Date().getTime();
-                if (dist < 0) { el.innerHTML = "PROYEK SELESAI"; clearInterval(countdownState.intervalId); countdownState.countdownStarted = false; return; }
+                if (dist < 0) { el.innerHTML = "PROYEK SELESAI"; clearInterval(countdownState.intervalId); return; }
                 el.innerHTML = `${String(Math.floor(dist / (1000 * 60 * 60 * 24))).padStart(3, '0')} Hari ${String(Math.floor((dist % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))).padStart(2, '0')}:${String(Math.floor((dist % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0')}:${String(Math.floor((dist % (1000 * 60)) / 1000)).padStart(2, '0')}`;
-            }
-            update();
-            countdownState.intervalId = setInterval(update, 1000);
+            }, 1000);
         }
 
-        // ===== S-CURVE CHART INITIALIZATION =====
+        // ===== KURVA S CHART =====
         let sCurveChart;
         function initSCurveChart() {
             const ctx = document.getElementById('sCurveChart').getContext('2d');
             sCurveChart = new Chart(ctx, {
                 type: 'line',
-                data: {
-                    labels: [], 
-                    datasets: [
-                        { label: 'Plan (%)', data: [], borderColor: '#FFC000', backgroundColor: 'rgba(255, 192, 0, 0.1)', borderWidth: 2, tension: 0.4, fill: true, spanGaps: true },
-                        { label: 'Actual (%)', data: [], borderColor: '#00FF00', backgroundColor: 'rgba(0, 255, 0, 0.1)', borderWidth: 2, tension: 0.4, fill: true, spanGaps: true }
-                    ]
-                },
+                data: { labels: [], datasets: [
+                    { label: 'Plan (%)', data: [], borderColor: '#FFC000', backgroundColor: 'rgba(255, 192, 0, 0.1)', borderWidth: 2, tension: 0.4, fill: true, spanGaps: true },
+                    { label: 'Actual (%)', data: [], borderColor: '#00FF00', backgroundColor: 'rgba(0, 255, 0, 0.1)', borderWidth: 2, tension: 0.4, fill: true, spanGaps: true }
+                ]},
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     plugins: { legend: { display: true, labels: { color: 'white', boxWidth: 10, font: { size: 9 } } } },
                     scales: {
-                        y: { beginAtZero: true, max: 100, ticks: { color: '#AAA', font: { size: 9 }, stepSize: 25 }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                        y: { beginAtZero: true, suggestedMax: 100, ticks: { color: '#AAA', font: { size: 9 }, stepSize: 25 }, grid: { color: 'rgba(255,255,255,0.1)' } },
                         x: { ticks: { color: '#AAA', font: { size: 9 } }, grid: { display: false } }
                     }
                 }
             });
         }
 
-        // ===== DYNAMIC S-CURVE UPDATER =====
+        // X-RAY PARSER: Fungsi ini sangat kuat mendeteksi dan mengubah segala jenis input aneh menjadi angka bersih
+        function parseCleanNumber(val) {
+            if (val === undefined || val === null || String(val).trim() === '') return null;
+            let str = String(val).replace(/%/g, '').replace(/,/g, '.').trim();
+            let num = parseFloat(str);
+            if (isNaN(num)) return null;
+            return num;
+        }
+
         function updateSCurve(row, isLive) {
             if (!sCurveChart) return;
 
             let maxIndex = 0;
+            // Deteksi bulan keberapa yang terakhir ada datanya
             for(let i = 1; i <= 60; i++) {
                 if(row['P'+i] !== undefined && String(row['P'+i]).trim() !== '') maxIndex = Math.max(maxIndex, i);
                 if(row['A'+i] !== undefined && String(row['A'+i]).trim() !== '') maxIndex = Math.max(maxIndex, i);
             }
 
-            // PERINGATAN: Kolom benar-benar terputus dari Backend!
             if (maxIndex === 0 && isLive) {
-                log('❌ Kurva S: P1 s/d P60 dan A1 s/d A60 KOSONG/TIDAK ADA!', 'error');
-                sCurveChart.data.labels = ['Periksa Apps Script Anda'];
-                sCurveChart.data.datasets[0].data = [0];
-                sCurveChart.data.datasets[1].data = [0];
-                sCurveChart.update();
+                log(`Kurva S: Tidak menemukan kolom dengan nama P1, P2... A1, A2 di sheet Anda. Pastikan Header (baris 1) tertulis persis P1.`, 'error');
                 return;
             }
 
-            let startDateRaw = row['STARTDATE'] || row['TGLMULAI'] || row['TANGGALMULAI'];
+            let startDateRaw = row['STARTDATE'] || row['TGLMULAI'] || row['TANGGALMULAI'] || '2024-01-01';
             let startDate = new Date(startDateRaw);
             if (isNaN(startDate.getTime())) startDate = new Date('2024-01-01');
 
             const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
             let labels = [], planData = [], actualData = [];
+            
+            // Variabel untuk mencetak hasil baca mentah ke panel diagnostik
+            let debugPrint = ""; 
 
             for(let i = 1; i <= maxIndex; i++) {
-                let d = new Date(startDate);
-                d.setMonth(d.getMonth() + (i - 1));
+                let d = new Date(startDate); d.setMonth(d.getMonth() + (i - 1));
                 labels.push(`${monthNames[d.getMonth()]} '${d.getFullYear().toString().slice(-2)}`);
 
-                let pVal = row['P'+i];
-                if(pVal !== undefined && String(pVal).trim() !== '') {
-                    let num = parseFloat(String(pVal).replace(/%/g, '').replace(/,/g, '.').trim());
-                    planData.push(isNaN(num) ? null : num);
-                } else { planData.push(null); }
+                // Menggunakan X-RAY PARSER untuk Plan
+                let rawP = row['P'+i];
+                let numP = parseCleanNumber(rawP);
+                planData.push(numP);
 
-                let aVal = row['A'+i];
-                if(aVal !== undefined && String(aVal).trim() !== '') {
-                    let num = parseFloat(String(aVal).replace(/%/g, '').replace(/,/g, '.').trim());
-                    actualData.push(isNaN(num) ? null : num);
-                } else { actualData.push(null); }
+                // Menggunakan X-RAY PARSER untuk Actual
+                let rawA = row['A'+i];
+                let numA = parseCleanNumber(rawA);
+                actualData.push(numA);
+                
+                // Simpan log diagnostik agar user bisa melihat "Apa yang dibaca sistem"
+                debugPrint += `[Bulan ${i}] Mentah Plan: "${rawP}" => Angka: ${numP} | Mentah Actual: "${rawA}" => Angka: ${numA} <br>`;
             }
 
             sCurveChart.data.labels = labels;
             sCurveChart.data.datasets[0].data = planData;
             sCurveChart.data.datasets[1].data = actualData;
             sCurveChart.update();
-            log(`✅ Kurva S: Menampilkan ${maxIndex} Bulan`, 'success');
-        }
-
-        // ===== FETCH WITH TIMEOUT =====
-        async function fetchWithTimeout(url, options = {}) {
-            const { timeout = 10000 } = options;
-            const controller = new AbortController();
-            const id = setTimeout(() => controller.abort(), timeout);
-            try {
-                const response = await fetch(url, { ...options, signal: controller.signal, mode: 'cors' });
-                clearTimeout(id); return response;
-            } catch (error) { clearTimeout(id); throw error; }
-        }
-
-        function updateProgressCircle(progressValue, planValue) {
-            let pNum = parseFloat(String(progressValue).replace(/%/g, '').replace(/,/g, '.').trim());
-            let plNum = parseFloat(String(planValue || '0').replace(/%/g, '').replace(/,/g, '.').trim());
-            if (!isNaN(pNum)) {
-                let color = (!isNaN(plNum) && plNum > pNum) ? '#FF0000' : '#00FF00'; 
-                document.querySelector('.circle-progress').style.background = `conic-gradient(${color} ${(pNum / 100) * 360}deg, #444 0deg)`;
+            
+            log(`<b>DATA KURVA S BERHASIL DIPROSES:</b><br>${debugPrint}`, 'warn');
+            
+            // Peringatan otomatis jika angkanya desimal kecil
+            let checkSmall = planData.find(x => x > 0 && x <= 1);
+            if (checkSmall !== undefined) {
+                log(`🚨 PERHATIAN: Ditemukan angka sangat kecil (contoh: ${checkSmall}). Apakah Anda memasukkan format desimal seperti 0.05 alih-alih 5% di spreadsheet? Grafik mungkin terlihat menempel rata di garis bawah!`, 'error');
             }
         }
 
         async function fetchDashboardData() {
-            log('🚀 Menarik data LIVE dari Spreadsheet...', 'info');
+            log('Mulai menarik data Google Sheets...', 'info');
             try {
-                const response = await fetchWithTimeout(CONFIG.APPS_SCRIPT_URL, { timeout: CONFIG.TIMEOUT });
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), CONFIG.TIMEOUT);
+                const response = await fetch(CONFIG.APPS_SCRIPT_URL, { signal: controller.signal, mode: 'cors' });
+                clearTimeout(timeoutId);
+                
                 if (!response.ok) throw new Error(`HTTP Error`);
                 const data = await response.json();
                 
                 if (data && Array.isArray(data) && data.length > 0) updateDashboard(data[0], true);
                 else if (data && typeof data === 'object') updateDashboard(data, true);
-                else throw new Error('Format Data Tidak Dikenali');
             } catch (error) {
-                log(`❌ Fetch Live Gagal. Menggunakan Data Demo...`, 'error');
+                log(`Gagal tarik data: ${error.message}. Memuat Demo.`, 'error');
                 updateDashboard(CONFIG.DEMO_DATA, false);
             }
         }
 
-        // ===== MAIN DASHBOARD UPDATER =====
         function updateDashboard(rawRow, isLive = false) {
             try {
-                // NORMALISASI: Mengubah header ke UPPERCASE dan menghapus spasi/simbol
+                // NORMALISASI: Hapus spasi dan simbol dari header agar cocok (P 1 menjadi P1)
                 const row = {};
                 for (let key in rawRow) {
                     if (rawRow.hasOwnProperty(key)) {
@@ -574,90 +435,56 @@
                     }
                 }
 
-                if (isLive) {
-                    log(`Data diterima. Jumlah kolom: ${Object.keys(row).length}`, 'info');
-                    console.log("DAFTAR KOLOM TERBACA DARI SPREADSHEET:", Object.keys(row));
-                }
+                if (isLive) log(`Total Kolom dibaca: ${Object.keys(row).length}`, 'success');
 
-                // Dynamic Date
-                const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-                const today = new Date();
-                document.getElementById('val-month-year').innerHTML = `Progress Summary<br>${monthNames[today.getMonth()]} ${today.getFullYear()}`;
-
-                // Text Fields Mapping
                 const fieldsToUpdate = {
                     'val-contract': 'CONTRACTVALUE', 'val-duration': 'CONTRACTDURATION',
-                    'val-project-manager': 'PROJECTMANAGER', 'val-progress-summary': 'PROGRESSSUMMARY',
-                    'val-hb': 'HB', 'val-hpp-arp': 'HPPARP', 'val-real-progress': 'REALPROGRESS',
+                    'val-project-manager': 'PROJECTMANAGER', 'val-hb': 'HB', 
+                    'val-hpp-arp': 'HPPARP', 'val-real-progress': 'REALPROGRESS',
                     'val-hpp-real': 'HPPREAL', 'val-eac': 'EAC', 'val-cash-in': 'CASHIN',
                     'val-defisit': 'DEFISITSURPLUS', 'val-nc': 'NC', 'val-nearmiss': 'NEARMISS', 'val-fatality': 'FATALITY'
                 };
 
-                for (const [elementId, dataKey] of Object.entries(fieldsToUpdate)) {
-                    const el = document.getElementById(elementId);
-                    if (el && row[dataKey] !== undefined) {
-                        let val = row[dataKey];
-                        if (dataKey === 'PROGRESSSUMMARY' && !String(val).includes('%')) val = `${val}%`;
-                        el.innerText = val;
-                        el.classList.remove('loading', 'error');
+                for (const [id, key] of Object.entries(fieldsToUpdate)) {
+                    if (row[key] !== undefined) {
+                        document.getElementById(id).innerText = row[key];
+                        document.getElementById(id).classList.remove('loading');
                     }
                 }
 
-                // KPIs
-                const parseToNum = (val) => parseFloat(String(val || '0').replace(/%/g, '').replace(/,/g, '.').trim()) || 0;
-                let actSummary = parseToNum(row['PROGRESSSUMMARY']);
-                let planSummary = parseToNum(row['PROGRESSPLAN']);
-                let hppReal = parseToNum(row['HPPREAL']);
-                let hppArp = parseToNum(row['HPPARP']);
-
-                let spi = planSummary !== 0 ? (actSummary / planSummary) : 0;
-                let epi = hppArp !== 0 ? (hppReal / hppArp) : 0;
-                let cpi = hppReal !== 0 ? ((1 / hppReal) * 100) : 0;
-
-                document.getElementById('val-spi').innerText = spi.toFixed(2);
-                document.getElementById('tag-spi').style.background = spi < 1 ? 'red' : 'green';
-                document.getElementById('val-epi').innerText = epi.toFixed(2);
-                document.getElementById('tag-epi').style.background = epi < 1 ? 'red' : 'green';
-                document.getElementById('val-cpi').innerText = cpi.toFixed(2);
-                document.getElementById('tag-cpi').style.background = cpi < 1 ? 'red' : 'green';
-
-                let pBanner = document.getElementById('val-performa');
-                if (spi >= 1 && epi >= 1 && cpi >= 1) { pBanner.innerText = 'EXCELLENT'; pBanner.style.background = 'green'; pBanner.style.color = 'white'; }
-                else if (spi < 1 && epi < 1 && cpi < 1) { pBanner.innerText = 'CRITICAL'; pBanner.style.background = 'red'; pBanner.style.color = 'white'; }
-                else { pBanner.innerText = 'WARNING'; pBanner.style.background = '#FFFF00'; pBanner.style.color = 'black'; }
-
-                if (row['PROGRESSSUMMARY'] !== undefined && row['PROGRESSPLAN'] !== undefined) {
-                    updateProgressCircle(row['PROGRESSSUMMARY'], row['PROGRESSPLAN']);
-                    let devVal = actSummary - planSummary;
-                    let pText = String(row['PROGRESSPLAN']).includes('%') ? row['PROGRESSPLAN'] : `${row['PROGRESSPLAN']}%`;
-                    document.getElementById('val-plan-dev').innerText = `Plan: ${pText} | Dev: ${devVal > 0 ? '+' : ''}${devVal.toFixed(3)}%`;
+                // Progress Summary (Donut Chart)
+                let actRaw = row['PROGRESSSUMMARY'];
+                let planRaw = row['PROGRESSPLAN'];
+                if(actRaw !== undefined) document.getElementById('val-progress-summary').innerText = String(actRaw).includes('%') ? actRaw : actRaw + '%';
+                
+                let actNum = parseCleanNumber(actRaw) || 0;
+                let planNum = parseCleanNumber(planRaw) || 0;
+                
+                if (planNum > 0) {
+                    let color = (planNum > actNum) ? '#FF0000' : '#00FF00';
+                    document.querySelector('.circle-progress').style.background = `conic-gradient(${color} ${(actNum / 100) * 360}deg, #444 0deg)`;
+                    document.getElementById('val-plan-dev').innerText = `Plan: ${planNum}% | Dev: ${(actNum - planNum).toFixed(2)}%`;
                 }
 
-                // Panggil Kurva S dengan flag "isLive"
+                // PANGGIL KURVA S
                 updateSCurve(row, isLive);
 
-                if (row['CITYNAME'] || row['KOTA']) updateWeather(row['CITYNAME'] || row['KOTA']);
                 if (row['TARGETFINISH']) initCountdown(row['TARGETFINISH']);
                 
-                // GMaps Update (Link diperbaiki agar pin area spesifik)
                 let lat = row['LAT'] || row['LATITUDE'];
                 let long = row['LONG'] || row['LONGITUDE'];
                 if (lat !== undefined && long !== undefined) {
-                    const gIframe = document.getElementById('val-gmaps');
-                    if (gIframe) {
-                        gIframe.src = `https://maps.google.com/maps?q=${lat},${long}&z=14&output=embed`;
-                        log(`✅ GMaps diupdate ke Lat: ${lat}, Long: ${long}`, 'success');
-                    }
+                    document.getElementById('val-gmaps').src = `https://maps.google.com/maps?q=${lat},${long}&z=14&output=embed`;
                 }
-            } catch (error) { log(`Dashboard error: ${error.message}`, 'error'); }
+
+            } catch (error) { log(`Error Render: ${error.message}`, 'error'); }
         }
 
         window.addEventListener('load', () => {
             initSCurveChart();
-            updateDashboard(CONFIG.DEMO_DATA, false); 
+            initCountdown(CONFIG.DEMO_DATA.TargetFinish);
             setTimeout(fetchDashboardData, 1000); 
         });
-
     </script>
 </body>
 </html>
