@@ -133,7 +133,9 @@
             padding: 0;
         }
 
-        .weather-box { display: flex; justify-content: space-between; font-size: 11px; background: var(--dark-blue); color: white; padding: 8px; border-radius: 4px; text-align: center; }
+        .weather-title { text-align: center; font-size: 11px; font-weight: bold; color: var(--dark-blue); margin-top: 6px; margin-bottom: 4px; }
+        .weather-box { display: flex; justify-content: space-between; font-size: 10px; background: var(--dark-blue); color: white; padding: 8px; border-radius: 4px; text-align: center; gap: 4px; }
+        .weather-day-box { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
 
         .center-column { display: flex; flex-direction: column; gap: 12px; }
         
@@ -254,11 +256,9 @@
                 </div>
             </div>
             
-            <div class="weather-box">
-                <div><strong>Sel</strong><br>30°C</div>
-                <div><strong>Rab</strong><br>30°C</div>
-                <div><strong>Kam</strong><br>32°C</div>
-                <div><strong>Jum</strong><br>31°C</div>
+            <div class="weather-title" id="weather-city-label">Prakiraan Cuaca</div>
+            <div class="weather-box" id="weather-container">
+                <div class="loading" style="width: 100%; color: white;">Memuat cuaca...</div>
             </div>
         </div>
 
@@ -365,12 +365,13 @@
                 ContractDuration: '24 Bulan',
                 ProjectManager: 'Daryanto Aloysius',
                 TargetFinish: '2026-12-31', 
-                ProgressSummary: '85.5', // Actual
-                ProgressPlan: '92.358', // Plan
+                CityName: 'Balikpapan',
+                ProgressSummary: '85.5', 
+                ProgressPlan: '92.358', 
                 HB: '92.4%',
                 HPP_ARP: '88.2%',
                 RealProgress: '85.5%',
-                HPP_Real: '87.9%', // Used for CPI and EPI calculations
+                HPP_Real: '87.9%',
                 EAC: '101.2%',
                 CashIn: 'Rp 420 M',
                 DefisitSurplus: 'Rp 80 M',
@@ -402,23 +403,90 @@
             map.resize();
         });
 
+
+        // ===== DYNAMIC 5-DAY WEATHER API (Open-Meteo with Weather Codes) =====
+        
+        // Helper: Convert WMO Code to Emoji & Text
+        function getWeatherDetail(code) {
+            // WMO Weather interpretation codes (https://open-meteo.com/en/docs)
+            if (code === 0) return { icon: '☀️', text: 'Cerah' };
+            if (code === 1 || code === 2 || code === 3) return { icon: '⛅', text: 'Berawan' };
+            if (code === 45 || code === 48) return { icon: '🌫️', text: 'Kabut' };
+            if (code >= 51 && code <= 55) return { icon: '🌧️', text: 'Gerimis' };
+            if (code >= 61 && code <= 65) return { icon: '🌧️', text: 'Hujan' };
+            if (code >= 80 && code <= 82) return { icon: '🌧️', text: 'Hujan' };
+            if (code >= 95 && code <= 99) return { icon: '⛈️', text: 'Badai' };
+            return { icon: '☁️', text: 'Awan' }; // Default fallback
+        }
+
+        async function updateWeather(cityName) {
+            if (!cityName) return;
+            
+            document.getElementById('weather-city-label').innerText = `Cuaca: ${cityName}`;
+            
+            try {
+                // 1. Geocoding
+                const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1`);
+                const geoData = await geoRes.json();
+                
+                if (!geoData.results || geoData.results.length === 0) {
+                    document.getElementById('weather-container').innerHTML = '<div style="width:100%; color:red;">Kota tidak ditemukan</div>';
+                    return;
+                }
+                
+                const lat = geoData.results[0].latitude;
+                const lon = geoData.results[0].longitude;
+                
+                // 2. Fetch 5-Day Weather Forecast (Now including weathercode)
+                const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,weathercode&timezone=auto`);
+                const weatherData = await weatherRes.json();
+                
+                // 3. Extract Days, Temps, and Codes
+                const days = weatherData.daily.time.slice(0, 5);
+                const temps = weatherData.daily.temperature_2m_max.slice(0, 5);
+                const codes = weatherData.daily.weathercode.slice(0, 5);
+                
+                const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+                
+                let weatherHTML = '';
+                for(let i=0; i<5; i++) {
+                    const date = new Date(days[i]);
+                    const dayName = dayNames[date.getDay()];
+                    const wDetail = getWeatherDetail(codes[i]);
+                    
+                    // Build the box: Day -> Emoji/Icon -> Temp -> Condition Text
+                    weatherHTML += `
+                        <div class="weather-day-box">
+                            <strong>${dayName}</strong>
+                            <div style="font-size:18px;">${wDetail.icon}</div>
+                            <div style="font-size:11px;">${Math.round(temps[i])}°C</div>
+                            <div style="font-size:8px; opacity:0.8;">${wDetail.text}</div>
+                        </div>`;
+                }
+                
+                document.getElementById('weather-container').innerHTML = weatherHTML;
+                log(`✅ Weather updated for ${cityName} with conditions`, 'success');
+                
+            } catch (error) {
+                log(`Weather API Error: ${error.message}`, 'error');
+                document.getElementById('weather-container').innerHTML = '<div style="width:100%; color:red;">Gagal memuat cuaca</div>';
+            }
+        }
+
+
         // ===== COUNTDOWN TIMER =====
         function initCountdown(targetFinishDate = null) {
             let targetDate;
             
             if (targetFinishDate) {
                 targetDate = new Date(targetFinishDate);
-                log(`📅 Using TargetFinish from spreadsheet: ${targetFinishDate}`, 'info');
-                
                 if (isNaN(targetDate.getTime())) {
-                    log(`⚠️ Invalid TargetFinish date: ${targetFinishDate}, using fallback...`, 'warn');
                     targetDate = new Date();
                     targetDate.setDate(targetDate.getDate() + 226);
                 }
             } else {
                 targetDate = new Date();
                 targetDate.setDate(targetDate.getDate() + 226);
-                log('📅 Using fallback countdown (226 days)', 'info');
             }
             
             targetDate.setHours(23, 59, 59, 999);
@@ -426,13 +494,11 @@
             if (countdownState.countdownStarted && 
                 countdownState.currentTargetDate && 
                 countdownState.currentTargetDate.getTime() === targetDate.getTime()) {
-                log('⏸️ Countdown already running with same target date, skipping reinitialize', 'warn');
                 return;
             }
             
             if (countdownState.intervalId !== null) {
                 clearInterval(countdownState.intervalId);
-                log('🛑 Cleared previous countdown interval', 'info');
             }
             
             countdownState.currentTargetDate = targetDate;
@@ -466,7 +532,6 @@
 
             updateCountdown();
             countdownState.intervalId = setInterval(updateCountdown, 1000);
-            log('✅ Countdown initialized and running', 'success');
         }
 
         // ===== S-CURVE CHART INITIALIZATION =====
@@ -508,26 +573,14 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            display: true,
-                            labels: { color: 'white', boxWidth: 10, font: { size: 9 } }
-                        }
+                        legend: { display: true, labels: { color: 'white', boxWidth: 10, font: { size: 9 } } }
                     },
                     scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 100,
-                            ticks: { color: '#AAA', font: { size: 9 }, stepSize: 25 },
-                            grid: { color: 'rgba(255,255,255,0.1)' }
-                        },
-                        x: {
-                            ticks: { color: '#AAA', font: { size: 9 } },
-                            grid: { display: false }
-                        }
+                        y: { beginAtZero: true, max: 100, ticks: { color: '#AAA', font: { size: 9 }, stepSize: 25 }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                        x: { ticks: { color: '#AAA', font: { size: 9 } }, grid: { display: false } }
                     }
                 }
             });
-            log('✅ S-Curve Chart initialized', 'success');
         }
 
         // ===== FETCH WITH TIMEOUT =====
@@ -537,11 +590,7 @@
             const id = setTimeout(() => controller.abort(), timeout);
             
             try {
-                const response = await fetch(url, {
-                    ...options,
-                    signal: controller.signal,
-                    mode: 'cors'
-                });
+                const response = await fetch(url, { ...options, signal: controller.signal, mode: 'cors' });
                 clearTimeout(id);
                 return response;
             } catch (error) {
@@ -562,54 +611,35 @@
                 progressNum = Math.min(Math.max(progressNum, 0), 100);
                 let degrees = (progressNum / 100) * 360;
                 
-                let color = '#00FF00'; // Default Green
+                let color = '#00FF00'; 
                 if (!isNaN(planNum)) {
-                    if (planNum > progressNum) {
-                        color = '#FF0000'; // Red if Plan is greater than Actual
-                    } else {
-                        color = '#00FF00'; // Green if Actual is greater/equal
-                    }
+                    if (planNum > progressNum) { color = '#FF0000'; } 
+                    else { color = '#00FF00'; }
                 }
                 
                 const circleElement = document.querySelector('.circle-progress');
                 circleElement.style.background = `conic-gradient(${color} ${degrees}deg, #444 0deg)`;
-                
-                log(`✅ Progress circle updated: Act=${progressNum}%, Plan=${planNum}% -> ${degrees}deg (Color: ${color})`, 'success');
-            } else {
-                log(`⚠️ Failed to parse progress value: ${progressValue}`, 'warn');
             }
         }
 
         // ===== IMPROVED DATA FETCHING =====
         async function fetchDashboardData() {
             log('🚀 Starting data fetch...', 'info');
-            
             try {
-                log(`Fetching from: ${CONFIG.APPS_SCRIPT_URL.substring(0, 60)}...`, 'info');
-                
-                const response = await fetchWithTimeout(CONFIG.APPS_SCRIPT_URL, {
-                    timeout: CONFIG.TIMEOUT
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
+                const response = await fetchWithTimeout(CONFIG.APPS_SCRIPT_URL, { timeout: CONFIG.TIMEOUT });
+                if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 
                 const data = await response.json();
-                log('✅ Data received successfully!', 'success');
-
+                
                 if (data && Array.isArray(data) && data.length > 0) {
                     updateDashboard(data[0]);
-                    log('Dashboard updated with real data', 'success');
                 } else if (data && typeof data === 'object') {
                     updateDashboard(data);
-                    log('Dashboard updated with object data', 'success');
                 } else {
                     throw new Error('Invalid data format');
                 }
             } catch (error) {
                 log(`❌ Fetch failed: ${error.message}`, 'error');
-                log('Using demo data...', 'warn');
                 updateDashboard(CONFIG.DEMO_DATA);
             }
         }
@@ -623,11 +653,9 @@
                 const currentMonthYear = `${monthNames[today.getMonth()]} ${today.getFullYear()}`;
                 
                 const monthYearElement = document.getElementById('val-month-year');
-                if(monthYearElement) {
-                    monthYearElement.innerHTML = `Progress Summary<br>${currentMonthYear}`;
-                }
+                if(monthYearElement) monthYearElement.innerHTML = `Progress Summary<br>${currentMonthYear}`;
 
-                // 2. TEXT FIELDS UPDATE (Removed SPI, EPI, CPI from this loop so we can handle them manually)
+                // 2. TEXT FIELDS UPDATE
                 const fieldsToUpdate = {
                     'val-contract': 'ContractValue',
                     'val-duration': 'ContractDuration',
@@ -645,52 +673,36 @@
                     'val-fatality': 'Fatality'
                 };
 
-                let updatedCount = 0;
                 for (const [elementId, dataKey] of Object.entries(fieldsToUpdate)) {
                     const element = document.getElementById(elementId);
                     if (element && row[dataKey] !== undefined) {
-                        
                         let valueToDisplay = row[dataKey];
-                        
-                        // Ensure ProgressSummary has a '%' symbol
                         if (dataKey === 'ProgressSummary' && !String(valueToDisplay).includes('%')) {
                             valueToDisplay = `${valueToDisplay}%`;
                         }
-
                         element.innerText = valueToDisplay;
                         element.classList.remove('loading', 'error');
-                        updatedCount++;
                     }
                 }
 
-                // --- HELPER FUNCTION TO PARSE NUMBERS ---
+                // 3. KPI CALCULATIONS
                 const parseToNum = (val) => parseFloat(String(val || '0').replace('%', '').replace(',', '.').trim()) || 0;
 
-                // 3. KPI CALCULATIONS (SPI, EPI, CPI)
                 let actSummary = parseToNum(row['ProgressSummary']);
                 let planSummary = parseToNum(row['ProgressPlan']);
-                
                 let hppReal = parseToNum(row['HPP_Real']);
                 let hppArp = parseToNum(row['HPP_ARP']);
 
-                // Calculate SPI = ProgressSummary / Progress Plan
                 let spi = planSummary !== 0 ? (actSummary / planSummary) : 0;
-                
-                // Calculate EPI = HPP_Real / HPP_ARP
-                let epi = hppArp !== 0 ? (hppArp / hppReal) : 0;
-                
-                // Calculate CPI = 1 / HPP_Real * 100
+                let epi = hppArp !== 0 ? (hppReal / hppArp) : 0;
                 let cpi = hppReal !== 0 ? ((1 / hppReal) * 100) : 0;
 
-                // Update SPI DOM
                 document.getElementById('val-spi').innerText = spi.toFixed(2);
                 document.getElementById('tag-spi').style.background = spi < 1 ? 'red' : 'green';
 
-                // Update EPI DOM
                 document.getElementById('val-epi').innerText = epi.toFixed(2);
                 document.getElementById('tag-epi').style.background = epi < 1 ? 'red' : 'green';
 
-                // Update CPI DOM
                 document.getElementById('val-cpi').innerText = cpi.toFixed(2);
                 document.getElementById('tag-cpi').style.background = cpi < 1 ? 'red' : 'green';
 
@@ -706,65 +718,44 @@
                     performaBanner.style.color = 'white';
                 } else {
                     performaBanner.innerText = 'WARNING';
-                    performaBanner.style.background = '#FFFF00'; // Yellow
+                    performaBanner.style.background = '#FFFF00'; 
                     performaBanner.style.color = 'black';
                 }
-                
-                log(`✅ KPIs Calculated: SPI=${spi.toFixed(2)}, EPI=${epi.toFixed(2)}, CPI=${cpi.toFixed(2)}`, 'success');
 
-                // 5. PROGRESS CIRCLE & DYNAMIC PLAN / DEV MATH
+                // 5. PROGRESS CIRCLE & DEV MATH
                 if (row['ProgressSummary'] !== undefined && row['ProgressPlan'] !== undefined) {
-                    
                     updateProgressCircle(row['ProgressSummary'], row['ProgressPlan']);
-
                     let devVal = actSummary - planSummary;
-                    
                     const formatPercentStr = (str) => String(str).includes('%') ? str : `${str}%`;
                     let planText = formatPercentStr(row['ProgressPlan']);
-                    
                     let devSign = devVal > 0 ? '+' : '';
                     let devText = `${devSign}${devVal.toFixed(3)}%`;
-                    
                     document.getElementById('val-plan-dev').innerText = `Plan: ${planText} | Dev: ${devText}`;
                 }
 
-                // 6. COUNTDOWN
+                // 6. DYNAMIC WEATHER TRIGGER
+                if (row['CityName'] !== undefined) {
+                    updateWeather(row['CityName']);
+                }
+
+                // 7. COUNTDOWN
                 if (row['TargetFinish']) {
                     initCountdown(row['TargetFinish']);
                 }
 
             } catch (error) {
                 log(`Error updating dashboard: ${error.message}`, 'error');
-                showError('Failed to display data');
             }
-        }
-
-        // ===== ERROR HANDLER =====
-        function showError(message) {
-            document.querySelectorAll('.loading').forEach(el => {
-                el.innerHTML = message;
-                el.classList.remove('loading');
-                el.classList.add('error');
-            });
-            log(`Error displayed: ${message}`, 'error');
         }
 
         // ===== INITIALIZATION =====
         window.addEventListener('load', () => {
-            log('🔄 Window loaded, initializing...', 'info');
-            
             initSCurveChart();
             initCountdown(CONFIG.DEMO_DATA.TargetFinish);
-            
-            // Trigger an initial update using Demo Data
             updateDashboard(CONFIG.DEMO_DATA);
-            
-            // Delay slightly to ensure DOM is ready before trying to fetch real data
             setTimeout(fetchDashboardData, 500);
         });
 
-        // Allow manual retry via console
-        window.retryFetch = fetchDashboardData;
     </script>
 </body>
 </html>
