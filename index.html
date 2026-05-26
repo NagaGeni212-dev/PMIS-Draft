@@ -364,6 +364,7 @@
                 ContractValue: 'Rp 500 Miliar',
                 ContractDuration: '24 Bulan',
                 ProjectManager: 'Daryanto Aloysius',
+                StartDate: '2024-01-01',     // <--- ADDED START DATE
                 TargetFinish: '2026-12-31', 
                 CityName: 'Balikpapan',
                 Lat: '-1.1274',
@@ -379,18 +380,16 @@
                 DefisitSurplus: 'Rp 80 M',
                 NC: '2',
                 Nearmiss: '5',
-                Fatality: '0'
+                Fatality: '0',
+                // DUMMY DATA FOR S-CURVE P1-P60 / A1-A60
+                P1: 5, P2: 12, P3: 20, P4: 28, P5: 35, P6: 45, P7: 55, P8: 68, P9: 78, P10: 88, P11: 92.358, P12: 100,
+                A1: 4.5, A2: 10, A3: 18, A4: 25, A5: 32, A6: 40, A7: 50, A8: 65, A9: 75, A10: 85.5
             }
         };
 
-        // ===== COUNTDOWN STATE MANAGEMENT =====
-        let countdownState = {
-            intervalId: null,
-            currentTargetDate: null,
-            countdownStarted: false
-        };
+        // ===== MAP & STATE =====
+        let countdownState = { intervalId: null, currentTargetDate: null, countdownStarted: false };
 
-        // ===== MAP INITIALIZATION =====
         const map = new maplibregl.Map({
             container: 'map',
             style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json', 
@@ -401,16 +400,10 @@
             antialias: true
         });
 
-        window.addEventListener('resize', () => {
-            map.resize();
-        });
+        window.addEventListener('resize', () => map.resize());
 
-
-        // ===== DYNAMIC 5-DAY WEATHER API (Open-Meteo with Weather Codes) =====
-        
-        // Helper: Convert WMO Code to Emoji & Text
+        // ===== DYNAMIC 5-DAY WEATHER API =====
         function getWeatherDetail(code) {
-            // WMO Weather interpretation codes (https://open-meteo.com/en/docs)
             if (code === 0) return { icon: '☀️', text: 'Cerah' };
             if (code === 1 || code === 2 || code === 3) return { icon: '⛅', text: 'Berawan' };
             if (code === 45 || code === 48) return { icon: '🌫️', text: 'Kabut' };
@@ -418,16 +411,13 @@
             if (code >= 61 && code <= 65) return { icon: '🌧️', text: 'Hujan' };
             if (code >= 80 && code <= 82) return { icon: '🌧️', text: 'Hujan' };
             if (code >= 95 && code <= 99) return { icon: '⛈️', text: 'Badai' };
-            return { icon: '☁️', text: 'Awan' }; // Default fallback
+            return { icon: '☁️', text: 'Awan' }; 
         }
 
         async function updateWeather(cityName) {
             if (!cityName) return;
-            
             document.getElementById('weather-city-label').innerText = `Cuaca: ${cityName}`;
-            
             try {
-                // 1. Geocoding
                 const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1`);
                 const geoData = await geoRes.json();
                 
@@ -439,15 +429,12 @@
                 const lat = geoData.results[0].latitude;
                 const lon = geoData.results[0].longitude;
                 
-                // 2. Fetch 5-Day Weather Forecast (Now including weathercode)
                 const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,weathercode&timezone=auto`);
                 const weatherData = await weatherRes.json();
                 
-                // 3. Extract Days, Temps, and Codes
                 const days = weatherData.daily.time.slice(0, 5);
                 const temps = weatherData.daily.temperature_2m_max.slice(0, 5);
                 const codes = weatherData.daily.weathercode.slice(0, 5);
-                
                 const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
                 
                 let weatherHTML = '';
@@ -455,8 +442,6 @@
                     const date = new Date(days[i]);
                     const dayName = dayNames[date.getDay()];
                     const wDetail = getWeatherDetail(codes[i]);
-                    
-                    // Build the box: Day -> Emoji/Icon -> Temp -> Condition Text
                     weatherHTML += `
                         <div class="weather-day-box">
                             <strong>${dayName}</strong>
@@ -465,73 +450,40 @@
                             <div style="font-size:8px; opacity:0.8;">${wDetail.text}</div>
                         </div>`;
                 }
-                
                 document.getElementById('weather-container').innerHTML = weatherHTML;
-                log(`✅ Weather updated for ${cityName} with conditions`, 'success');
-                
             } catch (error) {
-                log(`Weather API Error: ${error.message}`, 'error');
                 document.getElementById('weather-container').innerHTML = '<div style="width:100%; color:red;">Gagal memuat cuaca</div>';
             }
         }
 
-
         // ===== COUNTDOWN TIMER =====
         function initCountdown(targetFinishDate = null) {
-            let targetDate;
-            
-            if (targetFinishDate) {
-                targetDate = new Date(targetFinishDate);
-                if (isNaN(targetDate.getTime())) {
-                    targetDate = new Date();
-                    targetDate.setDate(targetDate.getDate() + 226);
-                }
-            } else {
-                targetDate = new Date();
-                targetDate.setDate(targetDate.getDate() + 226);
-            }
+            let targetDate = targetFinishDate ? new Date(targetFinishDate) : new Date(new Date().setDate(new Date().getDate() + 226));
+            if (isNaN(targetDate.getTime())) targetDate = new Date(new Date().setDate(new Date().getDate() + 226));
             
             targetDate.setHours(23, 59, 59, 999);
             
-            if (countdownState.countdownStarted && 
-                countdownState.currentTargetDate && 
-                countdownState.currentTargetDate.getTime() === targetDate.getTime()) {
-                return;
-            }
-            
-            if (countdownState.intervalId !== null) {
-                clearInterval(countdownState.intervalId);
-            }
+            if (countdownState.countdownStarted && countdownState.currentTargetDate && countdownState.currentTargetDate.getTime() === targetDate.getTime()) return;
+            if (countdownState.intervalId !== null) clearInterval(countdownState.intervalId);
             
             countdownState.currentTargetDate = targetDate;
             countdownState.countdownStarted = true;
 
             const countdownElement = document.getElementById('countdown');
-
             function updateCountdown() {
-                const now = new Date().getTime();
-                const distance = targetDate.getTime() - now;
-
+                const distance = targetDate.getTime() - new Date().getTime();
                 if (distance < 0) {
                     countdownElement.innerHTML = "PROYEK SELESAI";
                     clearInterval(countdownState.intervalId);
                     countdownState.countdownStarted = false;
                     return;
                 }
-
-                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-                const formattedDays = String(days).padStart(3, '0');
-                const formattedHours = String(hours).padStart(2, '0');
-                const formattedMinutes = String(minutes).padStart(2, '0');
-                const formattedSeconds = String(seconds).padStart(2, '0');
-
-                countdownElement.innerHTML = `${formattedDays} Hari ${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
+                const days = String(Math.floor(distance / (1000 * 60 * 60 * 24))).padStart(3, '0');
+                const hours = String(Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))).padStart(2, '0');
+                const minutes = String(Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
+                const seconds = String(Math.floor((distance % (1000 * 60)) / 1000)).padStart(2, '0');
+                countdownElement.innerHTML = `${days} Hari ${hours}:${minutes}:${seconds}`;
             }
-
             updateCountdown();
             countdownState.intervalId = setInterval(updateCountdown, 1000);
         }
@@ -541,42 +493,19 @@
 
         function initSCurveChart() {
             const ctx = document.getElementById('sCurveChart').getContext('2d');
-            
-            const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei'];
-            const planData = [10, 25, 45, 70, 92.35];
-            const actualData = [8, 20, 35, 60, 85.5]; 
-
             sCurveChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: labels,
+                    labels: [], // Will be filled dynamically
                     datasets: [
-                        {
-                            label: 'Plan (%)',
-                            data: planData,
-                            borderColor: '#FFC000', 
-                            backgroundColor: 'rgba(255, 192, 0, 0.1)',
-                            borderWidth: 2,
-                            tension: 0.4, 
-                            fill: true
-                        },
-                        {
-                            label: 'Actual (%)',
-                            data: actualData,
-                            borderColor: '#00FF00', 
-                            backgroundColor: 'rgba(0, 255, 0, 0.1)',
-                            borderWidth: 2,
-                            tension: 0.4,
-                            fill: true
-                        }
+                        { label: 'Plan (%)', data: [], borderColor: '#FFC000', backgroundColor: 'rgba(255, 192, 0, 0.1)', borderWidth: 2, tension: 0.4, fill: true, spanGaps: true },
+                        { label: 'Actual (%)', data: [], borderColor: '#00FF00', backgroundColor: 'rgba(0, 255, 0, 0.1)', borderWidth: 2, tension: 0.4, fill: true, spanGaps: true }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: true, labels: { color: 'white', boxWidth: 10, font: { size: 9 } } }
-                    },
+                    plugins: { legend: { display: true, labels: { color: 'white', boxWidth: 10, font: { size: 9 } } } },
                     scales: {
                         y: { beginAtZero: true, max: 100, ticks: { color: '#AAA', font: { size: 9 }, stepSize: 25 }, grid: { color: 'rgba(255,255,255,0.1)' } },
                         x: { ticks: { color: '#AAA', font: { size: 9 } }, grid: { display: false } }
@@ -585,188 +514,176 @@
             });
         }
 
+        // ===== DYNAMIC S-CURVE UPDATER (P1-P60 & A1-A60) =====
+        function updateSCurve(row) {
+            if (!sCurveChart) return;
+
+            // 1. Find how many months are actually filled in the spreadsheet
+            let maxIndex = 0;
+            for(let i = 1; i <= 60; i++) {
+                if(row['P'+i] !== undefined && String(row['P'+i]).trim() !== '') maxIndex = Math.max(maxIndex, i);
+                if(row['A'+i] !== undefined && String(row['A'+i]).trim() !== '') maxIndex = Math.max(maxIndex, i);
+            }
+
+            // 2. Parse Start Date
+            let startDate = new Date(row['StartDate']);
+            if (isNaN(startDate.getTime())) {
+                startDate = new Date(); // Fallback if StartDate is empty
+                log('⚠️ StartDate not found or invalid, using current date for chart axis.', 'warn');
+            }
+
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            let labels = [];
+            let planData = [];
+            let actualData = [];
+
+            // 3. Build data arrays only up to maxIndex
+            for(let i = 1; i <= maxIndex; i++) {
+                // Determine Axis X label (Month and Year)
+                let d = new Date(startDate);
+                d.setMonth(d.getMonth() + (i - 1));
+                let labelStr = `${monthNames[d.getMonth()]} '${d.getFullYear().toString().slice(-2)}`;
+                labels.push(labelStr);
+
+                // Fetch Plan (P) value
+                let pVal = row['P'+i];
+                if(pVal !== undefined && String(pVal).trim() !== '') {
+                    planData.push(parseFloat(String(pVal).replace('%', '').replace(',', '.')));
+                } else {
+                    planData.push(null);
+                }
+
+                // Fetch Actual (A) value
+                let aVal = row['A'+i];
+                if(aVal !== undefined && String(aVal).trim() !== '') {
+                    actualData.push(parseFloat(String(aVal).replace('%', '').replace(',', '.')));
+                } else {
+                    actualData.push(null);
+                }
+            }
+
+            // 4. Update the chart
+            sCurveChart.data.labels = labels;
+            sCurveChart.data.datasets[0].data = planData;
+            sCurveChart.data.datasets[1].data = actualData;
+            sCurveChart.update();
+            log(`✅ Kurva S updated showing ${maxIndex} months`, 'success');
+        }
+
         // ===== FETCH WITH TIMEOUT =====
         async function fetchWithTimeout(url, options = {}) {
             const { timeout = 10000 } = options;
             const controller = new AbortController();
             const id = setTimeout(() => controller.abort(), timeout);
-            
             try {
                 const response = await fetch(url, { ...options, signal: controller.signal, mode: 'cors' });
-                clearTimeout(id);
-                return response;
+                clearTimeout(id); return response;
             } catch (error) {
-                clearTimeout(id);
-                throw error;
+                clearTimeout(id); throw error;
             }
         }
 
-        // ===== UPDATE PROGRESS CIRCLE =====
         function updateProgressCircle(progressValue, planValue) {
-            let cleanProgress = String(progressValue).replace('%', '').replace(',', '.').trim();
-            let progressNum = parseFloat(cleanProgress);
-
-            let cleanPlan = String(planValue || '0').replace('%', '').replace(',', '.').trim();
-            let planNum = parseFloat(cleanPlan);
-
-            if (!isNaN(progressNum)) {
-                progressNum = Math.min(Math.max(progressNum, 0), 100);
-                let degrees = (progressNum / 100) * 360;
-                
-                let color = '#00FF00'; 
-                if (!isNaN(planNum)) {
-                    if (planNum > progressNum) { color = '#FF0000'; } 
-                    else { color = '#00FF00'; }
-                }
-                
-                const circleElement = document.querySelector('.circle-progress');
-                circleElement.style.background = `conic-gradient(${color} ${degrees}deg, #444 0deg)`;
+            let pNum = parseFloat(String(progressValue).replace('%', '').replace(',', '.').trim());
+            let plNum = parseFloat(String(planValue || '0').replace('%', '').replace(',', '.').trim());
+            if (!isNaN(pNum)) {
+                let color = (!isNaN(plNum) && plNum > pNum) ? '#FF0000' : '#00FF00'; 
+                document.querySelector('.circle-progress').style.background = `conic-gradient(${color} ${(pNum / 100) * 360}deg, #444 0deg)`;
             }
         }
 
-        // ===== IMPROVED DATA FETCHING =====
         async function fetchDashboardData() {
             log('🚀 Starting data fetch...', 'info');
             try {
                 const response = await fetchWithTimeout(CONFIG.APPS_SCRIPT_URL, { timeout: CONFIG.TIMEOUT });
-                if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-
+                if (!response.ok) throw new Error(`HTTP Error`);
                 const data = await response.json();
                 
-                if (data && Array.isArray(data) && data.length > 0) {
-                    updateDashboard(data[0]);
-                } else if (data && typeof data === 'object') {
-                    updateDashboard(data);
-                } else {
-                    throw new Error('Invalid data format');
-                }
+                if (data && Array.isArray(data) && data.length > 0) updateDashboard(data[0]);
+                else if (data && typeof data === 'object') updateDashboard(data);
+                else throw new Error('Invalid format');
             } catch (error) {
-                log(`❌ Fetch failed: ${error.message}`, 'error');
+                log(`❌ Fetch failed, using demo data...`, 'error');
                 updateDashboard(CONFIG.DEMO_DATA);
             }
         }
 
-        // ===== UPDATE DASHBOARD =====
+        // ===== MAIN DASHBOARD UPDATER =====
         function updateDashboard(row) {
             try {
-                // 1. UPDATE DYNAMIC DATE (MONTH & YEAR)
+                // Dynamic Date
                 const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
                 const today = new Date();
-                const currentMonthYear = `${monthNames[today.getMonth()]} ${today.getFullYear()}`;
-                
-                const monthYearElement = document.getElementById('val-month-year');
-                if(monthYearElement) monthYearElement.innerHTML = `Progress Summary<br>${currentMonthYear}`;
+                document.getElementById('val-month-year').innerHTML = `Progress Summary<br>${monthNames[today.getMonth()]} ${today.getFullYear()}`;
 
-                // 2. TEXT FIELDS UPDATE
+                // Text Fields
                 const fieldsToUpdate = {
-                    'val-contract': 'ContractValue',
-                    'val-duration': 'ContractDuration',
-                    'val-project-manager': 'ProjectManager',
-                    'val-progress-summary': 'ProgressSummary',
-                    'val-hb': 'HB',
-                    'val-hpp-arp': 'HPP_ARP',
-                    'val-real-progress': 'RealProgress',
-                    'val-hpp-real': 'HPP_Real',
-                    'val-eac': 'EAC',
-                    'val-cash-in': 'CashIn',
-                    'val-defisit': 'DefisitSurplus',
-                    'val-nc': 'NC',
-                    'val-nearmiss': 'Nearmiss',
-                    'val-fatality': 'Fatality'
+                    'val-contract': 'ContractValue', 'val-duration': 'ContractDuration',
+                    'val-project-manager': 'ProjectManager', 'val-progress-summary': 'ProgressSummary',
+                    'val-hb': 'HB', 'val-hpp-arp': 'HPP_ARP', 'val-real-progress': 'RealProgress',
+                    'val-hpp-real': 'HPP_Real', 'val-eac': 'EAC', 'val-cash-in': 'CashIn',
+                    'val-defisit': 'DefisitSurplus', 'val-nc': 'NC', 'val-nearmiss': 'Nearmiss', 'val-fatality': 'Fatality'
                 };
 
                 for (const [elementId, dataKey] of Object.entries(fieldsToUpdate)) {
-                    const element = document.getElementById(elementId);
-                    if (element && row[dataKey] !== undefined) {
-                        let valueToDisplay = row[dataKey];
-                        if (dataKey === 'ProgressSummary' && !String(valueToDisplay).includes('%')) {
-                            valueToDisplay = `${valueToDisplay}%`;
-                        }
-                        element.innerText = valueToDisplay;
-                        element.classList.remove('loading', 'error');
+                    const el = document.getElementById(elementId);
+                    if (el && row[dataKey] !== undefined) {
+                        let val = row[dataKey];
+                        if (dataKey === 'ProgressSummary' && !String(val).includes('%')) val = `${val}%`;
+                        el.innerText = val;
+                        el.classList.remove('loading', 'error');
                     }
                 }
 
-                // 3. KPI CALCULATIONS
+                // KPIs
                 const parseToNum = (val) => parseFloat(String(val || '0').replace('%', '').replace(',', '.').trim()) || 0;
-
                 let actSummary = parseToNum(row['ProgressSummary']);
                 let planSummary = parseToNum(row['ProgressPlan']);
                 let hppReal = parseToNum(row['HPP_Real']);
                 let hppArp = parseToNum(row['HPP_ARP']);
 
                 let spi = planSummary !== 0 ? (actSummary / planSummary) : 0;
-                let epi = hppArp !== 0 ? (hppArp / hppReal) : 0;
+                let epi = hppArp !== 0 ? (hppReal / hppArp) : 0;
                 let cpi = hppReal !== 0 ? ((1 / hppReal) * 100) : 0;
 
                 document.getElementById('val-spi').innerText = spi.toFixed(2);
                 document.getElementById('tag-spi').style.background = spi < 1 ? 'red' : 'green';
-
                 document.getElementById('val-epi').innerText = epi.toFixed(2);
                 document.getElementById('tag-epi').style.background = epi < 1 ? 'red' : 'green';
-
                 document.getElementById('val-cpi').innerText = cpi.toFixed(2);
                 document.getElementById('tag-cpi').style.background = cpi < 1 ? 'red' : 'green';
 
-                // 4. PERFORMA BOX LOGIC
-                let performaBanner = document.getElementById('val-performa');
-                if (spi >= 1 && epi >= 1 && cpi >= 1) {
-                    performaBanner.innerText = 'EXCELLENT';
-                    performaBanner.style.background = 'green';
-                    performaBanner.style.color = 'white';
-                } else if (spi < 1 && epi < 1 && cpi < 1) {
-                    performaBanner.innerText = 'CRITICAL';
-                    performaBanner.style.background = 'red';
-                    performaBanner.style.color = 'white';
-                } else {
-                    performaBanner.innerText = 'WARNING';
-                    performaBanner.style.background = '#FFFF00'; 
-                    performaBanner.style.color = 'black';
-                }
+                let pBanner = document.getElementById('val-performa');
+                if (spi >= 1 && epi >= 1 && cpi >= 1) { pBanner.innerText = 'EXCELLENT'; pBanner.style.background = 'green'; pBanner.style.color = 'white'; }
+                else if (spi < 1 && epi < 1 && cpi < 1) { pBanner.innerText = 'CRITICAL'; pBanner.style.background = 'red'; pBanner.style.color = 'white'; }
+                else { pBanner.innerText = 'WARNING'; pBanner.style.background = '#FFFF00'; pBanner.style.color = 'black'; }
 
-                // 5. PROGRESS CIRCLE & DEV MATH
+                // Dev Math
                 if (row['ProgressSummary'] !== undefined && row['ProgressPlan'] !== undefined) {
                     updateProgressCircle(row['ProgressSummary'], row['ProgressPlan']);
                     let devVal = actSummary - planSummary;
-                    const formatPercentStr = (str) => String(str).includes('%') ? str : `${str}%`;
-                    let planText = formatPercentStr(row['ProgressPlan']);
-                    let devSign = devVal > 0 ? '+' : '';
-                    let devText = `${devSign}${devVal.toFixed(3)}%`;
-                    document.getElementById('val-plan-dev').innerText = `Plan: ${planText} | Dev: ${devText}`;
+                    let pText = String(row['ProgressPlan']).includes('%') ? row['ProgressPlan'] : `${row['ProgressPlan']}%`;
+                    document.getElementById('val-plan-dev').innerText = `Plan: ${pText} | Dev: ${devVal > 0 ? '+' : ''}${devVal.toFixed(3)}%`;
                 }
 
-                // 6. DYNAMIC WEATHER TRIGGER
-                if (row['CityName'] !== undefined) {
-                    updateWeather(row['CityName']);
-                }
+                // Call the new S-Curve logic
+                updateSCurve(row);
 
-                // 7. COUNTDOWN
-                if (row['TargetFinish']) {
-                    initCountdown(row['TargetFinish']);
-                }
-
-                // 8. DYNAMIC GMAPS IFRAME
+                if (row['CityName']) updateWeather(row['CityName']);
+                if (row['TargetFinish']) initCountdown(row['TargetFinish']);
+                
                 if (row['Lat'] !== undefined && row['Long'] !== undefined) {
-                    const lat = row['Lat'];
-                    const long = row['Long'];
-                    const gmapsIframe = document.getElementById('val-gmaps');
-                    if (gmapsIframe) {
-                        gmapsIframe.src = `https://maps.google.com/maps?q=${lat},${long}&z=14&output=embed`;
-                        log(`✅ GMaps updated to Lat: ${lat}, Long: ${long}`, 'success');
-                    }
+                    const gIframe = document.getElementById('val-gmaps');
+                    if (gIframe) gIframe.src = `https://maps.google.com/maps?q=${row['Lat']},${row['Long']}&z=14&output=embed`;
                 }
-
-            } catch (error) {
-                log(`Error updating dashboard: ${error.message}`, 'error');
-            }
+            } catch (error) { log(`Dashboard error: ${error.message}`, 'error'); }
         }
 
-        // ===== INITIALIZATION =====
         window.addEventListener('load', () => {
             initSCurveChart();
             initCountdown(CONFIG.DEMO_DATA.TargetFinish);
-            updateDashboard(CONFIG.DEMO_DATA);
-            setTimeout(fetchDashboardData, 500);
+            updateDashboard(CONFIG.DEMO_DATA); // Loads demo data immediately
+            setTimeout(fetchDashboardData, 500); // Attempts to override with live data
         });
 
     </script>
