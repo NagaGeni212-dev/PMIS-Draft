@@ -364,7 +364,7 @@
                 ContractValue: 'Rp 500 Miliar',
                 ContractDuration: '24 Bulan',
                 ProjectManager: 'Daryanto Aloysius',
-                StartDate: '2024-01-01',     // <--- ADDED START DATE
+                StartDate: '2024-01-01', 
                 TargetFinish: '2026-12-31', 
                 CityName: 'Balikpapan',
                 Lat: '-1.1274',
@@ -496,7 +496,7 @@
             sCurveChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: [], // Will be filled dynamically
+                    labels: [], 
                     datasets: [
                         { label: 'Plan (%)', data: [], borderColor: '#FFC000', backgroundColor: 'rgba(255, 192, 0, 0.1)', borderWidth: 2, tension: 0.4, fill: true, spanGaps: true },
                         { label: 'Actual (%)', data: [], borderColor: '#00FF00', backgroundColor: 'rgba(0, 255, 0, 0.1)', borderWidth: 2, tension: 0.4, fill: true, spanGaps: true }
@@ -514,22 +514,30 @@
             });
         }
 
-        // ===== DYNAMIC S-CURVE UPDATER (P1-P60 & A1-A60) =====
+        // ===== DYNAMIC S-CURVE UPDATER =====
         function updateSCurve(row) {
             if (!sCurveChart) return;
 
-            // 1. Find how many months are actually filled in the spreadsheet
+            // 1. Tentukan batas data (maxIndex)
             let maxIndex = 0;
             for(let i = 1; i <= 60; i++) {
-                if(row['P'+i] !== undefined && String(row['P'+i]).trim() !== '') maxIndex = Math.max(maxIndex, i);
-                if(row['A'+i] !== undefined && String(row['A'+i]).trim() !== '') maxIndex = Math.max(maxIndex, i);
+                let pVal = row['P'+i];
+                let aVal = row['A'+i];
+                if(pVal !== undefined && String(pVal).trim() !== '') maxIndex = Math.max(maxIndex, i);
+                if(aVal !== undefined && String(aVal).trim() !== '') maxIndex = Math.max(maxIndex, i);
             }
 
-            // 2. Parse Start Date
-            let startDate = new Date(row['StartDate']);
+            // PENCEGAHAN ERROR: Jika maxIndex 0 (data tidak ada di sheet live), jangan hapus chart demo!
+            if (maxIndex === 0) {
+                log('⚠️ Kurva S: Kolom P1-P60 tidak ditemukan. Mempertahankan grafik terakhir.', 'warn');
+                return;
+            }
+
+            // 2. Tentukan Tanggal Mulai (Default 1 Jan 2024 jika kosong)
+            let startDateRaw = row['STARTDATE'] || row['TGLMULAI'] || row['TANGGALMULAI'];
+            let startDate = new Date(startDateRaw);
             if (isNaN(startDate.getTime())) {
-                startDate = new Date(); // Fallback if StartDate is empty
-                log('⚠️ StartDate not found or invalid, using current date for chart axis.', 'warn');
+                startDate = new Date('2024-01-01');
             }
 
             const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
@@ -537,37 +545,39 @@
             let planData = [];
             let actualData = [];
 
-            // 3. Build data arrays only up to maxIndex
+            // 3. Masukkan Data ke Chart
             for(let i = 1; i <= maxIndex; i++) {
-                // Determine Axis X label (Month and Year)
+                // Konversi Bulan & Tahun X-Axis
                 let d = new Date(startDate);
                 d.setMonth(d.getMonth() + (i - 1));
-                let labelStr = `${monthNames[d.getMonth()]} '${d.getFullYear().toString().slice(-2)}`;
-                labels.push(labelStr);
+                labels.push(`${monthNames[d.getMonth()]} '${d.getFullYear().toString().slice(-2)}`);
 
-                // Fetch Plan (P) value
+                // Parsing nilai Plan (P)
                 let pVal = row['P'+i];
                 if(pVal !== undefined && String(pVal).trim() !== '') {
-                    planData.push(parseFloat(String(pVal).replace('%', '').replace(',', '.')));
-                } else {
-                    planData.push(null);
+                    // Hapus simbol % dan ganti koma jadi titik agar terbaca sbg angka desimal
+                    let num = parseFloat(String(pVal).replace(/%/g, '').replace(/,/g, '.').trim());
+                    planData.push(isNaN(num) ? null : num);
+                } else { 
+                    planData.push(null); 
                 }
 
-                // Fetch Actual (A) value
+                // Parsing nilai Actual (A)
                 let aVal = row['A'+i];
                 if(aVal !== undefined && String(aVal).trim() !== '') {
-                    actualData.push(parseFloat(String(aVal).replace('%', '').replace(',', '.')));
-                } else {
-                    actualData.push(null);
+                    let num = parseFloat(String(aVal).replace(/%/g, '').replace(/,/g, '.').trim());
+                    actualData.push(isNaN(num) ? null : num);
+                } else { 
+                    actualData.push(null); 
                 }
             }
 
-            // 4. Update the chart
+            // 4. Render Ulang Grafik
             sCurveChart.data.labels = labels;
             sCurveChart.data.datasets[0].data = planData;
             sCurveChart.data.datasets[1].data = actualData;
             sCurveChart.update();
-            log(`✅ Kurva S updated showing ${maxIndex} months`, 'success');
+            log(`✅ Kurva S diperbarui (Menampilkan ${maxIndex} Bulan)`, 'success');
         }
 
         // ===== FETCH WITH TIMEOUT =====
@@ -584,8 +594,8 @@
         }
 
         function updateProgressCircle(progressValue, planValue) {
-            let pNum = parseFloat(String(progressValue).replace('%', '').replace(',', '.').trim());
-            let plNum = parseFloat(String(planValue || '0').replace('%', '').replace(',', '.').trim());
+            let pNum = parseFloat(String(progressValue).replace(/%/g, '').replace(/,/g, '.').trim());
+            let plNum = parseFloat(String(planValue || '0').replace(/%/g, '').replace(/,/g, '.').trim());
             if (!isNaN(pNum)) {
                 let color = (!isNaN(plNum) && plNum > pNum) ? '#FF0000' : '#00FF00'; 
                 document.querySelector('.circle-progress').style.background = `conic-gradient(${color} ${(pNum / 100) * 360}deg, #444 0deg)`;
@@ -609,38 +619,58 @@
         }
 
         // ===== MAIN DASHBOARD UPDATER =====
-        function updateDashboard(row) {
+        function updateDashboard(rawRow) {
             try {
+                // 1. NORMALISASI KUNCI/HEADER (FITUR AUTO-CLEAN)
+                // Fitur ini mengubah apapun header dari JSON (misal "P 1", "Progress_Summary", "Lat.")
+                // menjadi kapital tanpa spasi/simbol agar 100% cocok dengan kode kita.
+                const row = {};
+                for (let key in rawRow) {
+                    if (rawRow.hasOwnProperty(key)) {
+                        let cleanKey = String(key).toUpperCase().replace(/[^A-Z0-9]/g, '');
+                        row[cleanKey] = rawRow[key];
+                    }
+                }
+
                 // Dynamic Date
                 const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
                 const today = new Date();
                 document.getElementById('val-month-year').innerHTML = `Progress Summary<br>${monthNames[today.getMonth()]} ${today.getFullYear()}`;
 
-                // Text Fields
+                // Text Fields Mapping
                 const fieldsToUpdate = {
-                    'val-contract': 'ContractValue', 'val-duration': 'ContractDuration',
-                    'val-project-manager': 'ProjectManager', 'val-progress-summary': 'ProgressSummary',
-                    'val-hb': 'HB', 'val-hpp-arp': 'HPP_ARP', 'val-real-progress': 'RealProgress',
-                    'val-hpp-real': 'HPP_Real', 'val-eac': 'EAC', 'val-cash-in': 'CashIn',
-                    'val-defisit': 'DefisitSurplus', 'val-nc': 'NC', 'val-nearmiss': 'Nearmiss', 'val-fatality': 'Fatality'
+                    'val-contract': 'CONTRACTVALUE', 
+                    'val-duration': 'CONTRACTDURATION',
+                    'val-project-manager': 'PROJECTMANAGER', 
+                    'val-progress-summary': 'PROGRESSSUMMARY',
+                    'val-hb': 'HB', 
+                    'val-hpp-arp': 'HPPARP', 
+                    'val-real-progress': 'REALPROGRESS',
+                    'val-hpp-real': 'HPPREAL', 
+                    'val-eac': 'EAC', 
+                    'val-cash-in': 'CASHIN',
+                    'val-defisit': 'DEFISITSURPLUS', 
+                    'val-nc': 'NC', 
+                    'val-nearmiss': 'NEARMISS', 
+                    'val-fatality': 'FATALITY'
                 };
 
                 for (const [elementId, dataKey] of Object.entries(fieldsToUpdate)) {
                     const el = document.getElementById(elementId);
                     if (el && row[dataKey] !== undefined) {
                         let val = row[dataKey];
-                        if (dataKey === 'ProgressSummary' && !String(val).includes('%')) val = `${val}%`;
+                        if (dataKey === 'PROGRESSSUMMARY' && !String(val).includes('%')) val = `${val}%`;
                         el.innerText = val;
                         el.classList.remove('loading', 'error');
                     }
                 }
 
                 // KPIs
-                const parseToNum = (val) => parseFloat(String(val || '0').replace('%', '').replace(',', '.').trim()) || 0;
-                let actSummary = parseToNum(row['ProgressSummary']);
-                let planSummary = parseToNum(row['ProgressPlan']);
-                let hppReal = parseToNum(row['HPP_Real']);
-                let hppArp = parseToNum(row['HPP_ARP']);
+                const parseToNum = (val) => parseFloat(String(val || '0').replace(/%/g, '').replace(/,/g, '.').trim()) || 0;
+                let actSummary = parseToNum(row['PROGRESSSUMMARY']);
+                let planSummary = parseToNum(row['PROGRESSPLAN']);
+                let hppReal = parseToNum(row['HPPREAL']);
+                let hppArp = parseToNum(row['HPPARP']);
 
                 let spi = planSummary !== 0 ? (actSummary / planSummary) : 0;
                 let epi = hppArp !== 0 ? (hppReal / hppArp) : 0;
@@ -659,22 +689,25 @@
                 else { pBanner.innerText = 'WARNING'; pBanner.style.background = '#FFFF00'; pBanner.style.color = 'black'; }
 
                 // Dev Math
-                if (row['ProgressSummary'] !== undefined && row['ProgressPlan'] !== undefined) {
-                    updateProgressCircle(row['ProgressSummary'], row['ProgressPlan']);
+                if (row['PROGRESSSUMMARY'] !== undefined && row['PROGRESSPLAN'] !== undefined) {
+                    updateProgressCircle(row['PROGRESSSUMMARY'], row['PROGRESSPLAN']);
                     let devVal = actSummary - planSummary;
-                    let pText = String(row['ProgressPlan']).includes('%') ? row['ProgressPlan'] : `${row['ProgressPlan']}%`;
+                    let pText = String(row['PROGRESSPLAN']).includes('%') ? row['PROGRESSPLAN'] : `${row['PROGRESSPLAN']}%`;
                     document.getElementById('val-plan-dev').innerText = `Plan: ${pText} | Dev: ${devVal > 0 ? '+' : ''}${devVal.toFixed(3)}%`;
                 }
 
-                // Call the new S-Curve logic
+                // Panggil logika Kurva S (akan diproses secara tersendiri dengan data row yang sudah dinormalisasi)
                 updateSCurve(row);
 
-                if (row['CityName']) updateWeather(row['CityName']);
-                if (row['TargetFinish']) initCountdown(row['TargetFinish']);
+                if (row['CITYNAME'] || row['KOTA']) updateWeather(row['CITYNAME'] || row['KOTA']);
+                if (row['TARGETFINISH']) initCountdown(row['TARGETFINISH']);
                 
-                if (row['Lat'] !== undefined && row['Long'] !== undefined) {
+                // GMaps Update (Link diperbaiki)
+                if (row['LAT'] !== undefined && row['LONG'] !== undefined) {
                     const gIframe = document.getElementById('val-gmaps');
-                    if (gIframe) gIframe.src = `https://maps.google.com/maps?q=${row['Lat']},${row['Long']}&z=14&output=embed`;
+                    if (gIframe) {
+                        gIframe.src = `https://maps.google.com/maps?q=${row['LAT']},${row['LONG']}&z=14&output=embed`;
+                    }
                 }
             } catch (error) { log(`Dashboard error: ${error.message}`, 'error'); }
         }
