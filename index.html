@@ -218,9 +218,9 @@
 
         .maps-row {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 12px;
-            height: 400px;
+            height: 280px;
         }
 
         .map-card {
@@ -229,6 +229,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             overflow: hidden;
             position: relative;
+            min-height: 280px;
         }
 
         .map-card-title {
@@ -249,6 +250,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             padding: 12px;
             overflow-x: auto;
+            max-height: 400px;
         }
 
         .progress-table {
@@ -264,6 +266,8 @@
             padding: 8px;
             font-weight: bold;
             text-align: center;
+            position: sticky;
+            top: 0;
         }
 
         .progress-table td {
@@ -505,10 +509,63 @@
         }
         .debug-panel.show { display: block; }
 
-        @media (max-width: 1024px) {
-            .dashboard-container { grid-template-columns: 1fr; }
-            .maps-row { grid-template-columns: 1fr; height: auto; }
-            .bottom-charts-row { grid-template-columns: 1fr; height: auto; }
+        /* ===== RESPONSIVE BREAKPOINTS ===== */
+        @media (max-width: 1200px) {
+            .maps-row { 
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                height: 250px;
+            }
+            .map-card {
+                min-height: 250px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .maps-row { 
+                grid-template-columns: 1fr;
+                height: 280px;
+            }
+            .map-card {
+                min-height: 280px;
+            }
+            .dashboard-container { 
+                grid-template-columns: 1fr; 
+            }
+            .bottom-charts-row { 
+                grid-template-columns: 1fr; 
+                height: auto; 
+            }
+            .cctv-container {
+                grid-template-columns: 1fr;
+            }
+            header {
+                flex-direction: column;
+                gap: 8px;
+            }
+            .header-left {
+                min-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .sub-nav {
+                font-size: 10px;
+            }
+            .sub-nav div {
+                padding: 6px 8px;
+            }
+            .maps-row {
+                height: 220px;
+            }
+            .map-card {
+                min-height: 220px;
+            }
+            .progress-table {
+                font-size: 10px;
+            }
+            .progress-table th, .progress-table td {
+                padding: 6px 4px;
+            }
         }
     </style>
 </head>
@@ -982,6 +1039,7 @@
             if (globalMap) globalMap.resize();
             if (mapMonitoringLeft) mapMonitoringLeft.resize();
             if (mapMonitoringRight) mapMonitoringRight.resize();
+            if (sCurveChart) sCurveChart.resize();
         });
 
         // ===== WEATHER FUNCTIONS =====
