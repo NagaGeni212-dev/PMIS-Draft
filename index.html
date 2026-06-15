@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PMIS - Proyek Tol IKN (Dynamic Scrolling Page)</title>
-    <link href="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.css" rel="stylesheet" />
+    <##link href="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.css" rel="stylesheet" ##/>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.27/esri/themes/light/main.css">
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <##script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"><##/script>
+    <script src="https://js.arcgis.com/4.27/"></script>
     
     <style>
         :root {
@@ -1010,11 +1012,21 @@
 
         // ===== MAP INITIALIZATION =====
         function initMap() {
-            globalMap = new maplibregl.Map({
-                container: 'map',
-                style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json', 
-                center: [116.6856, -1.1274], zoom: 13.5, pitch: 60, bearing: 25, antialias: true
+            //globalMap = new maplibregl.Map({
+                //container: 'map',
+                //style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json', 
+                //center: [116.6856, -1.1274], zoom: 13.5, pitch: 60, bearing: 25, antialias: true
+            //});
+        require(["esri/Map", "esri/views/MapView"], function(Map, MapView) {
+            globalMap = new MapView({
+                container: "map",
+                map: new Map({
+                    basemap: "arcgis-streets"
+                }),
+                center: [116.6856, -1.1274],
+                zoom: 14
             });
+        });
         }
 
         function initMonitoringMaps() {
