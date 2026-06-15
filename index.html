@@ -704,7 +704,6 @@
                     <div class="slide">
                         <div class="slide-placeholder">📸 Photo Month 3</div>
                     </div>
-                    <!-- Add more slides as needed -->
                 </div>
 
                 <div class="slide-controls">
@@ -821,7 +820,6 @@
                 <h3 style="margin-top: 0; margin-bottom: 20px;">Project Progress Data Dashboard</h3>
                 
                 <div class="embed-container">
-                    <!-- Example 1: Power BI Embedded -->
                     <iframe title="Project Dashboard" 
                         src="https://app.powerbi.com/reportEmbed?reportId=YOUR_REPORT_ID&groupId=YOUR_GROUP_ID&config=eyJjbHVzdGVyVXJsIjoiaHR0cHM6Ly93YWJpLXNvdXRoLWVhc3QtYXNpYS1hLXByaW1hcnkucmVkaXJlY3QuYXJpLmNvbSIsImVtYmVkRmVhdHVyZXMiOnsibW9kZXJuRW1iZWQiOnRydWV9fQ%3d%3d"
                         allowFullScreen="true">
@@ -848,69 +846,10 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
-        // ===== NAVIGATION & PANEL SWITCHING =====
-        const navItems = document.querySelectorAll('.nav-item');
-        const contentPanels = document.querySelectorAll('.content-panel');
-
-        navItems.forEach(item => {
-            item.addEventListener('click', () => {
-                const panelId = item.getAttribute('data-panel');
-                
-                // Remove active class from all nav items
-                navItems.forEach(nav => nav.classList.remove('active'));
-                item.classList.add('active');
-
-                // Hide all panels
-                contentPanels.forEach(panel => panel.classList.remove('active'));
-
-                // Show selected panel
-                const selectedPanel = document.getElementById(panelId);
-                if (selectedPanel) {
-                    selectedPanel.classList.add('active');
-                    
-                    // Trigger resize events for maps
-                    setTimeout(() => {
-                        if (window.map) window.map.resize();
-                        if (window.sCurveChart) window.sCurveChart.resize();
-                        if (window.mapMonitoringLeft) window.mapMonitoringLeft.resize();
-                        if (window.mapMonitoringRight) window.mapMonitoringRight.resize();
-                    }, 100);
-                }
-            });
-        });
-
-        // ===== SLIDESHOW FUNCTIONS =====
+        // ===== GLOBAL VARIABLES =====
+        let globalMap, mapMonitoringLeft, mapMonitoringRight, sCurveChart;
         let currentSlideIndex = 1;
-
-        function showSlide(n) {
-            const slides = document.querySelectorAll('.slide');
-            if (n > slides.length) currentSlideIndex = 1;
-            if (n < 1) currentSlideIndex = slides.length;
-
-            slides.forEach(slide => slide.classList.remove('active'));
-            slides[currentSlideIndex - 1].classList.add('active');
-
-            // Update counter
-            document.getElementById('slide-counter').textContent = currentSlideIndex;
-
-            // Update thumbnails
-            const thumbs = document.querySelectorAll('.slide-thumbnail');
-            thumbs.forEach((thumb, index) => {
-                thumb.classList.toggle('active', index === currentSlideIndex - 1);
-            });
-        }
-
-        function nextSlide() {
-            showSlide(++currentSlideIndex);
-        }
-
-        function previousSlide() {
-            showSlide(--currentSlideIndex);
-        }
-
-        function currentSlide(n) {
-            showSlide(currentSlideIndex = n + 1);
-        }
+        let countdownState = { intervalId: null, currentTargetDate: null, countdownStarted: false };
 
         // ===== DEBUG UTILITIES =====
         const DEBUG = true;
@@ -950,25 +889,79 @@
             }
         };
 
-        // ===== MAP & STATE =====
-        let countdownState = { intervalId: null, currentTargetDate: null, countdownStarted: false };
-        let map, mapMonitoringLeft, mapMonitoringRight, sCurveChart;
+        // ===== NAVIGATION & PANEL SWITCHING =====
+        const navItems = document.querySelectorAll('.nav-item');
+        const contentPanels = document.querySelectorAll('.content-panel');
 
-        const map = new maplibregl.Map({
-            container: 'map',
-            style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json', 
-            center: [116.6856, -1.1274], zoom: 13.5, pitch: 60, bearing: 25, antialias: true
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const panelId = item.getAttribute('data-panel');
+                
+                navItems.forEach(nav => nav.classList.remove('active'));
+                item.classList.add('active');
+
+                contentPanels.forEach(panel => panel.classList.remove('active'));
+
+                const selectedPanel = document.getElementById(panelId);
+                if (selectedPanel) {
+                    selectedPanel.classList.add('active');
+                    
+                    setTimeout(() => {
+                        if (globalMap) globalMap.resize();
+                        if (sCurveChart) sCurveChart.resize();
+                        if (mapMonitoringLeft) mapMonitoringLeft.resize();
+                        if (mapMonitoringRight) mapMonitoringRight.resize();
+                    }, 100);
+
+                    if (panelId === 'monitoring') {
+                        initMonitoringMaps();
+                    }
+                }
+            });
         });
 
-        window.addEventListener('resize', () => {
-            if (map) map.resize();
-            if (mapMonitoringLeft) mapMonitoringLeft.resize();
-            if (mapMonitoringRight) mapMonitoringRight.resize();
-        });
+        // ===== SLIDESHOW FUNCTIONS =====
+        function showSlide(n) {
+            const slides = document.querySelectorAll('.slide');
+            if (n > slides.length) currentSlideIndex = 1;
+            if (n < 1) currentSlideIndex = slides.length;
 
-        // ===== INITIALIZE MONITORING MAPS (Lazy Load) =====
+            slides.forEach(slide => slide.classList.remove('active'));
+            if (slides[currentSlideIndex - 1]) {
+                slides[currentSlideIndex - 1].classList.add('active');
+            }
+
+            document.getElementById('slide-counter').textContent = currentSlideIndex;
+
+            const thumbs = document.querySelectorAll('.slide-thumbnail');
+            thumbs.forEach((thumb, index) => {
+                thumb.classList.toggle('active', index === currentSlideIndex - 1);
+            });
+        }
+
+        function nextSlide() {
+            showSlide(++currentSlideIndex);
+        }
+
+        function previousSlide() {
+            showSlide(--currentSlideIndex);
+        }
+
+        function currentSlide(n) {
+            showSlide(currentSlideIndex = n + 1);
+        }
+
+        // ===== MAP INITIALIZATION =====
+        function initMap() {
+            globalMap = new maplibregl.Map({
+                container: 'map',
+                style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json', 
+                center: [116.6856, -1.1274], zoom: 13.5, pitch: 60, bearing: 25, antialias: true
+            });
+        }
+
         function initMonitoringMaps() {
-            if (mapMonitoringLeft) return; // Already initialized
+            if (mapMonitoringLeft) return;
 
             mapMonitoringLeft = new maplibregl.Map({
                 container: 'map-monitoring-left',
@@ -985,7 +978,13 @@
             log('✅ Monitoring maps initialized', 'success');
         }
 
-        // ===== DYNAMIC 5-DAY WEATHER API =====
+        window.addEventListener('resize', () => {
+            if (globalMap) globalMap.resize();
+            if (mapMonitoringLeft) mapMonitoringLeft.resize();
+            if (mapMonitoringRight) mapMonitoringRight.resize();
+        });
+
+        // ===== WEATHER FUNCTIONS =====
         function getWeatherDetail(code) {
             if (code === 0) return { icon: '☀️', text: 'Cerah' };
             if (code === 1 || code === 2 || code === 3) return { icon: '⛅', text: 'Berawan' };
@@ -1046,7 +1045,7 @@
             countdownState.intervalId = setInterval(update, 1000);
         }
 
-        // ===== S-CURVE CHART INITIALIZATION =====
+        // ===== S-CURVE CHART =====
         function initSCurveChart() {
             const ctx = document.getElementById('sCurveChart').getContext('2d');
             sCurveChart = new Chart(ctx, {
@@ -1069,7 +1068,6 @@
             });
         }
 
-        // ===== DYNAMIC S-CURVE UPDATER =====
         function updateSCurve(row, isLive) {
             if (!sCurveChart) return;
 
@@ -1156,10 +1154,8 @@
             }
         }
 
-        // ===== MAIN DASHBOARD UPDATER =====
         function updateDashboard(rawRow, isLive = false) {
             try {
-                // NORMALISASI: Mengubah header ke UPPERCASE dan menghapus spasi/simbol
                 const row = {};
                 for (let key in rawRow) {
                     if (rawRow.hasOwnProperty(key)) {
@@ -1173,12 +1169,10 @@
                     console.log("DAFTAR KOLOM TERBACA DARI SPREADSHEET:", Object.keys(row));
                 }
 
-                // Dynamic Date
                 const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
                 const today = new Date();
                 document.getElementById('val-month-year').innerHTML = `Progress Summary<br>${monthNames[today.getMonth()]} ${today.getFullYear()}`;
 
-                // Text Fields Mapping
                 const fieldsToUpdate = {
                     'val-contract': 'CONTRACTVALUE', 'val-duration': 'CONTRACTDURATION',
                     'val-project-manager': 'PROJECTMANAGER', 'val-progress-summary': 'PROGRESSSUMMARY',
@@ -1197,7 +1191,6 @@
                     }
                 }
 
-                // KPIs
                 const parseToNum = (val) => parseFloat(String(val || '0').replace(/%/g, '').replace(/,/g, '.').trim()) || 0;
                 let actSummary = parseToNum(row['PROGRESSSUMMARY']);
                 let planSummary = parseToNum(row['PROGRESSPLAN']);
@@ -1227,13 +1220,11 @@
                     document.getElementById('val-plan-dev').innerText = `Plan: ${pText} | Dev: ${devVal > 0 ? '+' : ''}${devVal.toFixed(3)}%`;
                 }
 
-                // Panggil Kurva S dengan flag "isLive"
                 updateSCurve(row, isLive);
 
                 if (row['CITYNAME'] || row['KOTA']) updateWeather(row['CITYNAME'] || row['KOTA']);
                 if (row['TARGETFINISH']) initCountdown(row['TARGETFINISH']);
                 
-                // GMaps Update
                 let lat = row['LAT'] || row['LATITUDE'];
                 let long = row['LONG'] || row['LONGITUDE'];
                 if (lat !== undefined && long !== undefined) {
@@ -1246,21 +1237,13 @@
             } catch (error) { log(`Dashboard error: ${error.message}`, 'error'); }
         }
 
-        // ===== MONITOR MAP INITIALIZATION ON TAB SWITCH =====
-        document.addEventListener('DOMContentLoaded', () => {
-            // Add event listener to monitoring tab
-            const monitoringNav = document.querySelector('[data-panel="monitoring"]');
-            if (monitoringNav) {
-                monitoringNav.addEventListener('click', () => {
-                    setTimeout(initMonitoringMaps, 100);
-                });
-            }
-        });
-
+        // ===== INITIALIZATION =====
         window.addEventListener('load', () => {
+            initMap();
             initSCurveChart();
             updateDashboard(CONFIG.DEMO_DATA, false); 
-            setTimeout(fetchDashboardData, 1000); 
+            setTimeout(fetchDashboardData, 1000);
+            showSlide(currentSlideIndex); // Initialize slideshow
         });
 
     </script>
