@@ -1896,13 +1896,14 @@
                         }
 
                         const title = getCleanValue(cleanRow, ['TITLE', 'DASHBOARDNAME', 'NAMADASHBOARD', 'REPORTNAME', 'NAMAREPORT', 'PROJECTDATA', 'NAMA', 'NAME'], `Project Data ${index + 1}`);
+                        const description = getCleanValue(cleanRow, ['DESCRIPTION', 'DESKRIPSI'], '');
                         const category = getCleanValue(cleanRow, ['CATEGORY', 'KATEGORI', 'GROUP', 'MENU', 'SECTION', 'MODUL', 'MODULE'], '-');
                         const platformRaw = getCleanValue(cleanRow, ['PLATFORM', 'TYPE', 'EMBEDTYPE', 'SOURCETYPE', 'JENIS', 'FORMAT', 'TIPE'], 'Auto');
                         const url = getCleanValue(cleanRow, ['EMBEDURL', 'IFRAMESRC', 'IFRAME', 'URL', 'LINK', 'LINKWEB', 'WEBLINK', 'DASHBOARDURL', 'REPORTURL', 'POWERBI', 'LOOKER', 'DATASTUDIO'], '');
                         const status = getCleanValue(cleanRow, ['STATUS', 'CONDITION', 'KONDISI'], 'Active');
-                        const remark = getCleanValue(cleanRow, ['REMARK', 'KETERANGAN', 'NOTES', 'CATATAN', 'DESKRIPSI', 'DESCRIPTION'], '-');
+                        const remark = getCleanValue(cleanRow, ['REMARK', 'KETERANGAN', 'NOTES', 'CATATAN'], '-');
 
-                        return { title, category, platform: platformRaw, url, status, remark };
+                        return { title, description, category, platform: platformRaw, url, status, remark };
                     }).filter(item => item.url);
 
                     if (projectDataList.length === 0) {
@@ -1916,7 +1917,8 @@
                     projectDataList.forEach((item, index) => {
                         const btn = document.createElement('div');
                         btn.className = 'gallery-tab';
-                        btn.innerText = item.title;
+                        btn.innerText = item.description || item.title;
+                        btn.title = item.description || item.title;
                         btn.onclick = () => selectProjectData(index);
                         tabsContainer.appendChild(btn);
                     });
@@ -2019,13 +2021,14 @@
                         }
 
                         const title = getCleanValue(cleanRow, ['TITLE', 'DASHBOARDNAME', 'NAMADASHBOARD', 'REPORTNAME', 'NAMAREPORT', 'PROGRESSMONITORING', 'MONITORING', 'NAMA', 'NAME'], `Progress Monitoring ${index + 1}`);
+                        const description = getCleanValue(cleanRow, ['DESCRIPTION', 'DESKRIPSI'], '');
                         const category = getCleanValue(cleanRow, ['CATEGORY', 'KATEGORI', 'GROUP', 'MENU', 'SECTION', 'MODUL', 'MODULE'], '-');
                         const platformRaw = getCleanValue(cleanRow, ['PLATFORM', 'TYPE', 'EMBEDTYPE', 'SOURCETYPE', 'JENIS', 'FORMAT', 'TIPE'], 'Auto');
                         const url = getCleanValue(cleanRow, ['EMBEDURL', 'IFRAMESRC', 'IFRAME', 'URL', 'LINK', 'LINKWEB', 'WEBLINK', 'DASHBOARDURL', 'REPORTURL', 'POWERBI', 'LOOKER', 'DATASTUDIO'], '');
                         const status = getCleanValue(cleanRow, ['STATUS', 'CONDITION', 'KONDISI'], 'Active');
-                        const remark = getCleanValue(cleanRow, ['REMARK', 'KETERANGAN', 'NOTES', 'CATATAN', 'DESKRIPSI', 'DESCRIPTION'], '-');
+                        const remark = getCleanValue(cleanRow, ['REMARK', 'KETERANGAN', 'NOTES', 'CATATAN'], '-');
 
-                        return { title, category, platform: platformRaw, url, status, remark };
+                        return { title, description, category, platform: platformRaw, url, status, remark };
                     }).filter(item => item.url);
 
                     if (progressMonitoringList.length === 0) {
@@ -2039,7 +2042,8 @@
                     progressMonitoringList.forEach((item, index) => {
                         const btn = document.createElement('div');
                         btn.className = 'gallery-tab';
-                        btn.innerText = item.title;
+                        btn.innerText = item.description || item.title;
+                        btn.title = item.description || item.title;
                         btn.onclick = () => selectProgressMonitoring(index);
                         tabsContainer.appendChild(btn);
                     });
