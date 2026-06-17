@@ -844,25 +844,46 @@
                 </div>
 
                 <div class="progress-table-card">
-                    <h3 style="margin-top: 0;">Progress Monitoring Data</h3>
-                    <table class="progress-table">
-                        <thead>
-                            <tr>
-                            </tr>
-                        </thead>
-                        <tbody id="progress-table-body">
-                            <tr>
-                                <td>
-                                    <div class="embed-container">
-                                    <iframe title="Project Dashboard" 
-                                    src="https://app.powerbi.com/view?r=eyJrIjoiMDVjZWYxMzMtNTgyYS00N2MxLThhMzktMzI4MzRiZTU4Mjc0IiwidCI6Ijc1ZWFhYzQzLTlhNTUtNGM5Yy1iNGNjLTNjYTg1YjQxMzMxNyIsImMiOjEwfQ%3D%3D"
-                                    allowFullScreen="true">
-                                    </iframe>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div id="progress-monitoring-tabs" class="gallery-tabs-container"></div>
+
+                    <div id="progress-monitoring-loading" class="loading-gallery">Memuat data Progress Monitoring...</div>
+
+                    <div id="progress-monitoring-content" style="display:none;">
+                        <div class="project-data-title-row">
+                            <h3 id="progress-monitoring-title">Progress Monitoring Dashboard</h3>
+                            <div id="progress-monitoring-status-badge" class="project-data-status-badge">Status</div>
+                        </div>
+
+                        <div id="progress-monitoring-embed" class="embed-container">
+                            <iframe id="progress-monitoring-iframe"
+                                title="Progress Monitoring Dashboard"
+                                src="about:blank"
+                                allow="autoplay; fullscreen; picture-in-picture"
+                                allowFullScreen="true">
+                            </iframe>
+                        </div>
+
+                        <div id="progress-monitoring-message" class="project-data-message"></div>
+
+                        <div id="progress-monitoring-info-panel" class="project-data-info-panel">
+                            <div class="project-data-info-item">
+                                <div class="project-data-info-label">Category</div>
+                                <div id="progress-monitoring-info-category" class="project-data-info-value">-</div>
+                            </div>
+                            <div class="project-data-info-item">
+                                <div class="project-data-info-label">Platform</div>
+                                <div id="progress-monitoring-info-platform" class="project-data-info-value">-</div>
+                            </div>
+                            <div class="project-data-info-item">
+                                <div class="project-data-info-label">Remark</div>
+                                <div id="progress-monitoring-info-remark" class="project-data-info-value">-</div>
+                            </div>
+                            <div class="project-data-info-item">
+                                <div class="project-data-info-label">Open Link</div>
+                                <div class="project-data-info-value"><a id="progress-monitoring-open-link" class="project-data-open-link" href="#" target="_blank" rel="noopener noreferrer">Open dashboard</a></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1913,6 +1934,130 @@
             });
         }
 
+        // ===== STATE MANAGEMENT PROGRESS MONITORING EMBED =====
+        const PROGRESS_MONITORING_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ0bXGaASnad47Vz7XXLRh2-XHa5IFsRPH98yNKadgpmhE0PO_CbWrFLZMbYjWZLuO61s_ZeeYPpkh5/pub?gid=256628508&single=true&output=csv';
+        let progressMonitoringList = [];
+        let currentProgressMonitoringIndex = 0;
+
+        function showProgressMonitoringMessage(htmlMessage) {
+            const embed = document.getElementById('progress-monitoring-embed');
+            const iframe = document.getElementById('progress-monitoring-iframe');
+            const message = document.getElementById('progress-monitoring-message');
+
+            iframe.src = 'about:blank';
+            embed.style.display = 'none';
+            message.innerHTML = htmlMessage;
+            message.style.display = 'flex';
+        }
+
+        function loadProgressMonitoringEmbed(item) {
+            const embed = document.getElementById('progress-monitoring-embed');
+            const iframe = document.getElementById('progress-monitoring-iframe');
+            const message = document.getElementById('progress-monitoring-message');
+            const embedUrl = normalizeEmbedUrl(item.url, item.platform);
+
+            if (!embedUrl) {
+                showProgressMonitoringMessage('URL dashboard kosong atau format tidak didukung. Gunakan link http/https dari Power BI, Google Looker Studio, Google Sheets, Tableau, atau web dashboard lain.');
+                return;
+            }
+
+            message.style.display = 'none';
+            message.innerHTML = '';
+            embed.style.display = 'block';
+            iframe.src = embedUrl;
+        }
+
+        function updateProgressMonitoringDisplay() {
+            if (!progressMonitoringList.length) return;
+
+            const item = progressMonitoringList[currentProgressMonitoringIndex];
+            const statusText = item.status || 'Active';
+            const statusLower = statusText.toLowerCase();
+            const badge = document.getElementById('progress-monitoring-status-badge');
+            const platform = detectProjectDataPlatform(item.url, item.platform);
+            const embedUrl = normalizeEmbedUrl(item.url, platform);
+
+            document.getElementById('progress-monitoring-title').innerText = item.title || `Progress Monitoring ${currentProgressMonitoringIndex + 1}`;
+            document.getElementById('progress-monitoring-info-category').innerText = item.category || '-';
+            document.getElementById('progress-monitoring-info-platform').innerText = platform || '-';
+            document.getElementById('progress-monitoring-info-remark').innerText = item.remark || '-';
+
+            const openLink = document.getElementById('progress-monitoring-open-link');
+            openLink.href = embedUrl || '#';
+            openLink.innerText = embedUrl ? 'Open dashboard' : 'No link';
+
+            badge.innerText = statusText;
+            badge.className = 'project-data-status-badge';
+            if (statusLower.includes('active') || statusLower.includes('online') || statusLower.includes('aktif')) badge.classList.add('active');
+            else if (statusLower.includes('warning') || statusLower.includes('maintenance') || statusLower.includes('review') || statusLower.includes('draft')) badge.classList.add('warning');
+            else badge.classList.add('offline');
+
+            document.querySelectorAll('#progress-monitoring-tabs .gallery-tab').forEach((tab, index) => {
+                tab.classList.toggle('active', index === currentProgressMonitoringIndex);
+            });
+
+            loadProgressMonitoringEmbed(item);
+        }
+
+        function selectProgressMonitoring(index) {
+            currentProgressMonitoringIndex = index;
+            updateProgressMonitoringDisplay();
+        }
+
+        function fetchAndRenderProgressMonitoring() {
+            Papa.parse(PROGRESS_MONITORING_CSV_URL, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    const data = results.data || [];
+
+                    progressMonitoringList = data.map((row, index) => {
+                        const cleanRow = {};
+                        for (let key in row) {
+                            cleanRow[String(key).toUpperCase().replace(/[^A-Z0-9]/g, '')] = row[key];
+                        }
+
+                        const title = getCleanValue(cleanRow, ['TITLE', 'DASHBOARDNAME', 'NAMADASHBOARD', 'REPORTNAME', 'NAMAREPORT', 'PROGRESSMONITORING', 'MONITORING', 'NAMA', 'NAME'], `Progress Monitoring ${index + 1}`);
+                        const category = getCleanValue(cleanRow, ['CATEGORY', 'KATEGORI', 'GROUP', 'MENU', 'SECTION', 'MODUL', 'MODULE'], '-');
+                        const platformRaw = getCleanValue(cleanRow, ['PLATFORM', 'TYPE', 'EMBEDTYPE', 'SOURCETYPE', 'JENIS', 'FORMAT', 'TIPE'], 'Auto');
+                        const url = getCleanValue(cleanRow, ['EMBEDURL', 'IFRAMESRC', 'IFRAME', 'URL', 'LINK', 'LINKWEB', 'WEBLINK', 'DASHBOARDURL', 'REPORTURL', 'POWERBI', 'LOOKER', 'DATASTUDIO'], '');
+                        const status = getCleanValue(cleanRow, ['STATUS', 'CONDITION', 'KONDISI'], 'Active');
+                        const remark = getCleanValue(cleanRow, ['REMARK', 'KETERANGAN', 'NOTES', 'CATATAN', 'DESKRIPSI', 'DESCRIPTION'], '-');
+
+                        return { title, category, platform: platformRaw, url, status, remark };
+                    }).filter(item => item.url);
+
+                    if (progressMonitoringList.length === 0) {
+                        document.getElementById('progress-monitoring-loading').innerHTML = 'Tidak ada data Progress Monitoring yang ditemukan. Pastikan spreadsheet punya kolom URL/Link/EmbedURL.';
+                        return;
+                    }
+
+                    const tabsContainer = document.getElementById('progress-monitoring-tabs');
+                    tabsContainer.innerHTML = '';
+
+                    progressMonitoringList.forEach((item, index) => {
+                        const btn = document.createElement('div');
+                        btn.className = 'gallery-tab';
+                        btn.innerText = item.title;
+                        btn.onclick = () => selectProgressMonitoring(index);
+                        tabsContainer.appendChild(btn);
+                    });
+
+                    document.getElementById('progress-monitoring-loading').style.display = 'none';
+                    document.getElementById('progress-monitoring-content').style.display = 'block';
+
+                    selectProgressMonitoring(0);
+                    log(`✅ Progress Monitoring: Menampilkan ${progressMonitoringList.length} embed dari Spreadsheet`, 'success');
+                },
+                error: function(err) {
+                    document.getElementById('progress-monitoring-loading').innerHTML = '<span style="color:red;">Gagal memuat Progress Monitoring dari spreadsheet.</span>';
+                    log('❌ Progress Monitoring CSV gagal dimuat', 'error');
+                }
+            });
+        }
+
+
         // ===== INITIALIZATION =====
         window.addEventListener('load', () => {
             initMap();
@@ -1921,7 +2066,8 @@
             setTimeout(fetchDashboardData, 1000);
             setTimeout(fetchAndRenderGallery, 1500);
             setTimeout(fetchAndRenderCCTV, 1800);
-            setTimeout(fetchAndRenderProjectData, 2100);
+            setTimeout(fetchAndRenderProgressMonitoring, 2000);
+            setTimeout(fetchAndRenderProjectData, 2200);
         });
 
     </script>
