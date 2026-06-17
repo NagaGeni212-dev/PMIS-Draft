@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PMIS - Proyek Tol IKN</title>
+    <title>PMIS - Proyek Tol IKN (Full Restoration)</title>
     <link href="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -16,12 +16,10 @@
         .sub-nav div.active { color: black; border-bottom: 2px solid var(--primary-red); }
         .tab-section { display: none; padding: 20px; }
         .active-tab { display: block; }
-        
-        /* Dashboard Grid */
-        .dashboard-container { display: grid; grid-template-columns: 250px 1fr 250px; gap: 15px; }
+        /* Dashboard Layout */
+        .dashboard-container { display: grid; grid-template-columns: 250px 1fr 250px; gap: 15px; padding: 20px; }
         .card { background: white; padding: 15px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 15px; }
-        
-        /* Gallery Styles */
+        /* Gallery */
         .gallery-wrapper { background: white; padding: 20px; border-radius: 6px; }
         .gallery-tabs-container { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
         .gallery-tab { padding: 8px 15px; background: #eee; cursor: pointer; border-radius: 4px; font-size: 12px; }
@@ -34,34 +32,27 @@
 </head>
 <body>
 
-<header>
-    <div><strong>PMIS - TOL IKN SEKSI 5B</strong></div>
-</header>
+<header><div><strong>PROJECT MANAGEMENT INFORMATION SYSTEM</strong></div></header>
 
 <div class="sub-nav">
-    <div class="active" onclick="showTab('tab-home', this)">Home</div>
-    <div onclick="showTab('tab-monitoring', this)">Progress Monitoring</div>
-    <div onclick="showTab('tab-gallery', this)">Progress Visualization</div>
-    <div onclick="showTab('tab-cctv', this)">CCTV</div>
-    <div onclick="showTab('tab-org', this)">Organization Chart</div>
-    <div onclick="showTab('tab-data', this)">Project Data</div>
+    <div class="active" onclick="switchTab('tab-home', this)">Home</div>
+    <div onclick="switchTab('tab-monitoring', this)">Progress Monitoring</div>
+    <div onclick="switchTab('tab-gallery', this)">Visualization</div>
+    <div onclick="switchTab('tab-cctv', this)">CCTV</div>
+    <div onclick="switchTab('tab-org', this)">Org Chart</div>
+    <div onclick="switchTab('tab-data', this)">Project Data</div>
 </div>
 
 <div id="tab-home" class="tab-section active-tab dashboard-container">
-    <div class="column">
-        <div class="card"><h3>Project Info</h3><div id="val-contract">Memuat...</div></div>
-    </div>
-    <div class="center-column">
-        <div class="card" style="height: 300px;"><h3>Map View</h3><div id="map" style="height: 250px;"></div></div>
-    </div>
-    <div class="column">
-        <div class="card"><h3>Financial</h3><div id="val-hb">Memuat...</div></div>
-    </div>
+    <div class="column"><div class="card"><h3>Project Information</h3><div id="val-contract">Memuat...</div></div></div>
+    <div class="center-column"><div class="card"><h3>3D Map View</h3><div id="map" style="height: 300px;"></div></div></div>
+    <div class="column"><div class="card"><h3>Financial Overview</h3><div id="val-hb">Memuat...</div></div></div>
 </div>
 
-<div id="tab-monitoring" class="tab-section">
-    <div class="card"><h3>Monitoring Data</h3><table id="monitoring-table" style="width:100%"><tr><th>Activity</th><th>Plan</th><th>Actual</th></tr></table></div>
-</div>
+<div id="tab-monitoring" class="tab-section"><div class="card"><h3>Monitoring</h3><p>Data Monitoring Progress.</p></div></div>
+<div id="tab-cctv" class="tab-section"><div class="card"><h3>Live CCTV</h3><p>Kamera Area Proyek.</p></div></div>
+<div id="tab-org" class="tab-section"><div class="card"><h3>Org Chart</h3><p>PM: Daryanto Aloysius</p></div></div>
+<div id="tab-data" class="tab-section"><div class="card"><h3>Project Data</h3><p>Detail Data Kontrak.</p></div></div>
 
 <div id="tab-gallery" class="tab-section">
     <div class="gallery-wrapper">
@@ -74,55 +65,38 @@
     </div>
 </div>
 
-<div id="tab-cctv" class="tab-section"><div class="card"><h3>Live CCTV</h3><p>Camera feed offline.</p></div></div>
-<div id="tab-org" class="tab-section"><div class="card"><h3>Organization Chart</h3><p>Daryanto Aloysius - Project Manager</p></div></div>
-<div id="tab-data" class="tab-section"><div class="card"><h3>Project Data</h3><p>Data stored in secure server.</p></div></div>
-
 <script>
-    // Navigation
-    function showTab(tabId, el) {
+    function switchTab(id, el) {
         document.querySelectorAll('.tab-section').forEach(t => t.classList.remove('active-tab'));
         document.querySelectorAll('.sub-nav div').forEach(d => d.classList.remove('active'));
-        document.getElementById(tabId).classList.add('active-tab');
+        document.getElementById(id).classList.add('active-tab');
         el.classList.add('active');
     }
 
-    // Gallery Logic
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ0bXGaASnad47Vz7XXLRh2-XHa5IFsRPH98yNKadgpmhE0PO_CbWrFLZMbYjWZLuO61s_ZeeYPpkh5/pub?gid=0&single=true&output=csv';
     let galleryData = {}, currentMonth = '', currentIndex = 0;
 
-    function fetchGallery() {
-        Papa.parse(CSV_URL, { download: true, header: true, complete: (res) => {
-            res.data.forEach(row => {
-                const month = new Date(row.Tanggal).toLocaleString('id-ID', { month: 'long', year: 'numeric' });
-                if (!galleryData[month]) galleryData[month] = [];
-                galleryData[month].push(row.LinkFoto.replace('/view', '').replace('/file/d/', '/uc?export=view&id='));
-            });
-            renderTabs();
-        }});
-    }
-
-    function renderTabs() {
-        const container = document.getElementById('gallery-tabs');
-        Object.keys(galleryData).forEach((m, i) => {
-            const div = document.createElement('div');
-            div.className = 'gallery-tab' + (i === 0 ? ' active' : '');
-            div.innerText = m;
-            div.onclick = () => { currentMonth = m; currentIndex = 0; updateCarousel(); };
-            container.appendChild(div);
+    Papa.parse(CSV_URL, { download: true, header: true, complete: (res) => {
+        res.data.forEach(row => {
+            if(!row.Tanggal) return;
+            const m = new Date(row.Tanggal).toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+            if (!galleryData[m]) galleryData[m] = [];
+            galleryData[m].push(row.LinkFoto.replace('/view', '').replace('/file/d/', '/uc?export=view&id='));
         });
-        currentMonth = Object.keys(galleryData)[0];
-        updateCarousel();
-    }
+        Object.keys(galleryData).forEach(m => {
+            let div = document.createElement('div');
+            div.className = 'gallery-tab'; div.innerText = m;
+            div.onclick = () => { currentMonth = m; currentIndex = 0; updateCarousel(); };
+            document.getElementById('gallery-tabs').appendChild(div);
+        });
+        currentMonth = Object.keys(galleryData)[0]; updateCarousel();
+    }});
 
     function updateCarousel() {
         document.getElementById('carousel-image').src = galleryData[currentMonth][currentIndex];
     }
-
     function nextPhoto() { if(currentIndex < galleryData[currentMonth].length - 1) { currentIndex++; updateCarousel(); } }
     function prevPhoto() { if(currentIndex > 0) { currentIndex--; updateCarousel(); } }
-
-    window.onload = () => { fetchGallery(); };
 </script>
 </body>
 </html>
