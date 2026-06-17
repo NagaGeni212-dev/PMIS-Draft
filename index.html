@@ -500,14 +500,44 @@
             margin: 12px 0;
         }
 
-        /* ===== PROJECT DATA PANEL ===== */
+        /* ===== PROJECT DATA PANEL (SPREADSHEET-DRIVEN EMBED MODE) ===== */
         .project-data-container {
             background: white;
             border-radius: 4px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            padding: 12px;
+            padding: 20px;
             overflow: auto;
         }
+
+        .project-data-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+
+        .project-data-title-row h3 {
+            margin: 0;
+            color: #222;
+            font-size: 16px;
+        }
+
+        .project-data-status-badge {
+            background: #666;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .project-data-status-badge.active { background: green; }
+        .project-data-status-badge.warning { background: #FFC000; color: #111; }
+        .project-data-status-badge.offline { background: #666; }
 
         .embed-container {
             position: relative;
@@ -515,6 +545,7 @@
             aspect-ratio: 16 / 9;
             border-radius: 4px;
             overflow: hidden;
+            background: #111;
         }
 
         .embed-container iframe {
@@ -524,6 +555,61 @@
             width: 100%;
             height: 100%;
             border: none;
+            background: white;
+        }
+
+        .project-data-message {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            min-height: 240px;
+            background: #111;
+            color: white;
+            border-radius: 4px;
+            padding: 30px;
+            text-align: center;
+            line-height: 1.5;
+            font-size: 13px;
+            box-sizing: border-box;
+        }
+
+        .project-data-info-panel {
+            margin-top: 14px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .project-data-info-item {
+            background: #F5F5F5;
+            border: 1px solid #E0E0E0;
+            border-radius: 4px;
+            padding: 8px 10px;
+        }
+
+        .project-data-info-label {
+            color: #666;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+
+        .project-data-info-value {
+            color: #222;
+            font-weight: 600;
+            word-break: break-word;
+        }
+
+        .project-data-open-link {
+            color: var(--primary-red);
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .project-data-open-link:hover {
+            text-decoration: underline;
         }
 
         .debug-panel {
@@ -903,22 +989,46 @@
         <!-- PROJECT DATA PANEL -->
         <div id="projectdata" class="content-panel">
             <div class="project-data-container">
-                <h3 style="margin-top: 0; margin-bottom: 20px;">Project Progress Data Dashboard</h3>
-                
-                <div class="embed-container">
-                    <iframe title="Project Dashboard" 
-                        src="https://datastudio.google.com/embed/reporting/49331205-0eb4-46d0-a819-44d720a58259/page/wl8XD"
-                        allowFullScreen="true">
-                    </iframe>
-                </div>
+                <div id="project-data-tabs" class="gallery-tabs-container"></div>
 
-                <p style="margin-top: 20px; padding: 12px; background: #FFF3CD; border-radius: 4px; color: #333; font-size: 12px;">
-                    <strong>⚠️ Setup Instructions:</strong><br>
-                    1. Replace the src URL with your actual Power BI report URL or Google Looker dashboard URL<br>
-                    2. For Power BI: Get the embed URL from Power BI service (Publish to web)<br>
-                    3. For Google Looker: Use the embed code provided by your Looker administrator<br>
-                    4. Ensure proper authentication and sharing permissions are set
-                </p>
+                <div id="project-data-loading" class="loading-gallery">Memuat data Project Data...</div>
+
+                <div id="project-data-content" style="display:none;">
+                    <div class="project-data-title-row">
+                        <h3 id="project-data-title">Project Data Dashboard</h3>
+                        <div id="project-data-status-badge" class="project-data-status-badge">Status</div>
+                    </div>
+
+                    <div id="project-data-embed" class="embed-container">
+                        <iframe id="project-data-iframe"
+                            title="Project Data Dashboard"
+                            src="about:blank"
+                            allow="autoplay; fullscreen; picture-in-picture"
+                            allowFullScreen="true">
+                        </iframe>
+                    </div>
+
+                    <div id="project-data-message" class="project-data-message"></div>
+
+                    <div id="project-data-info-panel" class="project-data-info-panel">
+                        <div class="project-data-info-item">
+                            <div class="project-data-info-label">Category</div>
+                            <div id="project-data-info-category" class="project-data-info-value">-</div>
+                        </div>
+                        <div class="project-data-info-item">
+                            <div class="project-data-info-label">Platform</div>
+                            <div id="project-data-info-platform" class="project-data-info-value">-</div>
+                        </div>
+                        <div class="project-data-info-item">
+                            <div class="project-data-info-label">Remark</div>
+                            <div id="project-data-info-remark" class="project-data-info-value">-</div>
+                        </div>
+                        <div class="project-data-info-item">
+                            <div class="project-data-info-label">Open Link</div>
+                            <div class="project-data-info-value"><a id="project-data-open-link" class="project-data-open-link" href="#" target="_blank" rel="noopener noreferrer">Open dashboard</a></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1344,7 +1454,7 @@
             currentGalleryMonth = month;
             currentPhotoIndex = 0;
 
-            document.querySelectorAll('.gallery-tab').forEach(tab => {
+            document.querySelectorAll('#gallery-tabs .gallery-tab').forEach(tab => {
                 if(tab.innerText === month) tab.classList.add('active');
                 else tab.classList.remove('active');
             });
@@ -1644,6 +1754,165 @@
             });
         }
 
+
+        // ===== STATE MANAGEMENT PROJECT DATA =====
+        const PROJECT_DATA_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ0bXGaASnad47Vz7XXLRh2-XHa5IFsRPH98yNKadgpmhE0PO_CbWrFLZMbYjWZLuO61s_ZeeYPpkh5/pub?gid=873857565&single=true&output=csv';
+        let projectDataList = [];
+        let currentProjectDataIndex = 0;
+
+        function sanitizeEmbedUrl(url) {
+            if (!url) return '';
+            const trimmed = String(url).trim();
+            const allowed = /^(https?:\/\/|about:blank)/i;
+            return allowed.test(trimmed) ? trimmed : '';
+        }
+
+        function normalizeEmbedUrl(url, platform = '') {
+            let safeUrl = sanitizeEmbedUrl(url);
+            if (!safeUrl) return '';
+
+            const lowerPlatform = String(platform || '').toLowerCase();
+
+            // Auto-convert Google Looker Studio/Data Studio report links into embed links when needed.
+            if ((safeUrl.includes('lookerstudio.google.com/reporting/') || safeUrl.includes('datastudio.google.com/reporting/')) && !safeUrl.includes('/embed/reporting/')) {
+                safeUrl = safeUrl.replace('lookerstudio.google.com/reporting/', 'lookerstudio.google.com/embed/reporting/');
+                safeUrl = safeUrl.replace('datastudio.google.com/reporting/', 'datastudio.google.com/embed/reporting/');
+            }
+
+            // Keep already valid Power BI / Looker / published Google Sheet / web embed URLs as-is.
+            if (lowerPlatform.includes('looker') || lowerPlatform.includes('power') || lowerPlatform.includes('sheet') || lowerPlatform.includes('web')) return safeUrl;
+            return safeUrl;
+        }
+
+        function detectProjectDataPlatform(url, type) {
+            const cleanUrl = String(url || '').toLowerCase();
+            const cleanType = String(type || '').trim();
+            if (cleanType && cleanType.toLowerCase() !== 'auto') return cleanType;
+            if (cleanUrl.includes('powerbi.com')) return 'Power BI';
+            if (cleanUrl.includes('lookerstudio.google.com') || cleanUrl.includes('datastudio.google.com')) return 'Looker Studio';
+            if (cleanUrl.includes('docs.google.com/spreadsheets')) return 'Google Sheets';
+            if (cleanUrl.includes('tableau')) return 'Tableau';
+            return 'Web Embed';
+        }
+
+        function showProjectDataMessage(htmlMessage) {
+            const embed = document.getElementById('project-data-embed');
+            const iframe = document.getElementById('project-data-iframe');
+            const message = document.getElementById('project-data-message');
+
+            iframe.src = 'about:blank';
+            embed.style.display = 'none';
+            message.innerHTML = htmlMessage;
+            message.style.display = 'flex';
+        }
+
+        function loadProjectDataEmbed(item) {
+            const embed = document.getElementById('project-data-embed');
+            const iframe = document.getElementById('project-data-iframe');
+            const message = document.getElementById('project-data-message');
+            const embedUrl = normalizeEmbedUrl(item.url, item.platform);
+
+            if (!embedUrl) {
+                showProjectDataMessage('URL dashboard kosong atau format tidak didukung. Gunakan link http/https dari Google Looker Studio, Power BI, Google Sheets, Tableau, atau web dashboard lain.');
+                return;
+            }
+
+            message.style.display = 'none';
+            message.innerHTML = '';
+            embed.style.display = 'block';
+            iframe.src = embedUrl;
+        }
+
+        function updateProjectDataDisplay() {
+            if (!projectDataList.length) return;
+
+            const item = projectDataList[currentProjectDataIndex];
+            const statusText = item.status || 'Active';
+            const statusLower = statusText.toLowerCase();
+            const badge = document.getElementById('project-data-status-badge');
+            const platform = detectProjectDataPlatform(item.url, item.platform);
+            const embedUrl = normalizeEmbedUrl(item.url, platform);
+
+            document.getElementById('project-data-title').innerText = item.title || `Project Data ${currentProjectDataIndex + 1}`;
+            document.getElementById('project-data-info-category').innerText = item.category || '-';
+            document.getElementById('project-data-info-platform').innerText = platform || '-';
+            document.getElementById('project-data-info-remark').innerText = item.remark || '-';
+
+            const openLink = document.getElementById('project-data-open-link');
+            openLink.href = embedUrl || '#';
+            openLink.innerText = embedUrl ? 'Open dashboard' : 'No link';
+
+            badge.innerText = statusText;
+            badge.className = 'project-data-status-badge';
+            if (statusLower.includes('active') || statusLower.includes('online') || statusLower.includes('aktif')) badge.classList.add('active');
+            else if (statusLower.includes('warning') || statusLower.includes('maintenance') || statusLower.includes('review') || statusLower.includes('draft')) badge.classList.add('warning');
+            else badge.classList.add('offline');
+
+            document.querySelectorAll('#project-data-tabs .gallery-tab').forEach((tab, index) => {
+                tab.classList.toggle('active', index === currentProjectDataIndex);
+            });
+
+            loadProjectDataEmbed(item);
+        }
+
+        function selectProjectData(index) {
+            currentProjectDataIndex = index;
+            updateProjectDataDisplay();
+        }
+
+        function fetchAndRenderProjectData() {
+            Papa.parse(PROJECT_DATA_CSV_URL, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    const data = results.data || [];
+
+                    projectDataList = data.map((row, index) => {
+                        const cleanRow = {};
+                        for (let key in row) {
+                            cleanRow[String(key).toUpperCase().replace(/[^A-Z0-9]/g, '')] = row[key];
+                        }
+
+                        const title = getCleanValue(cleanRow, ['TITLE', 'DASHBOARDNAME', 'NAMADASHBOARD', 'REPORTNAME', 'NAMAREPORT', 'PROJECTDATA', 'NAMA', 'NAME'], `Project Data ${index + 1}`);
+                        const category = getCleanValue(cleanRow, ['CATEGORY', 'KATEGORI', 'GROUP', 'MENU', 'SECTION', 'MODUL', 'MODULE'], '-');
+                        const platformRaw = getCleanValue(cleanRow, ['PLATFORM', 'TYPE', 'EMBEDTYPE', 'SOURCETYPE', 'JENIS', 'FORMAT', 'TIPE'], 'Auto');
+                        const url = getCleanValue(cleanRow, ['EMBEDURL', 'IFRAMESRC', 'IFRAME', 'URL', 'LINK', 'LINKWEB', 'WEBLINK', 'DASHBOARDURL', 'REPORTURL', 'POWERBI', 'LOOKER', 'DATASTUDIO'], '');
+                        const status = getCleanValue(cleanRow, ['STATUS', 'CONDITION', 'KONDISI'], 'Active');
+                        const remark = getCleanValue(cleanRow, ['REMARK', 'KETERANGAN', 'NOTES', 'CATATAN', 'DESKRIPSI', 'DESCRIPTION'], '-');
+
+                        return { title, category, platform: platformRaw, url, status, remark };
+                    }).filter(item => item.url);
+
+                    if (projectDataList.length === 0) {
+                        document.getElementById('project-data-loading').innerHTML = 'Tidak ada data Project Data yang ditemukan. Pastikan spreadsheet punya kolom URL/Link/EmbedURL.';
+                        return;
+                    }
+
+                    const tabsContainer = document.getElementById('project-data-tabs');
+                    tabsContainer.innerHTML = '';
+
+                    projectDataList.forEach((item, index) => {
+                        const btn = document.createElement('div');
+                        btn.className = 'gallery-tab';
+                        btn.innerText = item.title;
+                        btn.onclick = () => selectProjectData(index);
+                        tabsContainer.appendChild(btn);
+                    });
+
+                    document.getElementById('project-data-loading').style.display = 'none';
+                    document.getElementById('project-data-content').style.display = 'block';
+
+                    selectProjectData(0);
+                    log(`✅ Project Data: Menampilkan ${projectDataList.length} embed dari Spreadsheet`, 'success');
+                },
+                error: function(err) {
+                    document.getElementById('project-data-loading').innerHTML = '<span style="color:red;">Gagal memuat Project Data dari spreadsheet.</span>';
+                    log('❌ Project Data CSV gagal dimuat', 'error');
+                }
+            });
+        }
+
         // ===== INITIALIZATION =====
         window.addEventListener('load', () => {
             initMap();
@@ -1652,6 +1921,7 @@
             setTimeout(fetchDashboardData, 1000);
             setTimeout(fetchAndRenderGallery, 1500);
             setTimeout(fetchAndRenderCCTV, 1800);
+            setTimeout(fetchAndRenderProjectData, 2100);
         });
 
     </script>
