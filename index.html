@@ -137,44 +137,52 @@
         .loading { color: #666; font-style: italic; }
         .error { color: red; font-weight: bold; }
 
-        /* ===== GALLERY STYLING ===== */
+        /* ===== GALLERY STYLING (CAROUSEL MODE) ===== */
         .gallery-wrapper {
-            background: white;
-            border-radius: 6px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            padding: 20px;
+            background: white; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); padding: 20px;
         }
-        .month-group { margin-bottom: 30px; }
-        .month-header {
-            background-color: var(--primary-red);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 4px;
-            font-size: 14px;
-            margin-bottom: 15px;
-            border-left: 5px solid #FFC000;
+        
+        .gallery-tabs-container {
+            display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px;
+            border-bottom: 2px solid var(--card-gray); padding-bottom: 12px;
         }
-        .photo-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
+        
+        .gallery-tab {
+            padding: 8px 16px; background: #E6E6E6; border-radius: 4px; 
+            cursor: pointer; font-size: 12px; font-weight: bold; color: #555; transition: 0.3s ease;
         }
-        .photo-card {
-            border-radius: 4px;
-            overflow: hidden;
-            border: 1px solid #DDD;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            background: var(--light-bg);
-            aspect-ratio: 4 / 3;
+        
+        .gallery-tab:hover { background: #CCC; }
+        .gallery-tab.active { background: var(--primary-red); color: white; }
+
+        .gallery-carousel-container {
+            display: flex; align-items: center; justify-content: center; gap: 15px; width: 100%;
         }
-        .photo-card img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s ease;
+
+        .img-container {
+            width: 100%; max-width: 800px; aspect-ratio: 16 / 9; background: #222; 
+            position: relative; border-radius: 6px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
-        .photo-card img:hover { transform: scale(1.05); }
-        .loading-gallery { text-align: center; color: #666; font-style: italic; padding: 20px; }
+
+        .img-container img {
+            width: 100%; height: 100%; object-fit: contain; /* Menggunakan contain agar foto tidak terpotong */
+            transition: opacity 0.3s ease;
+        }
+
+        .photo-counter {
+            position: absolute; bottom: 15px; right: 15px; background: rgba(0,0,0,0.7);
+            color: white; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; letter-spacing: 1px;
+        }
+
+        .nav-btn {
+            background: var(--dark-blue); color: white; border: none; padding: 20px 15px; 
+            font-size: 24px; cursor: pointer; border-radius: 4px; transition: 0.3s ease;
+        }
+
+        .nav-btn:hover:not(:disabled) { background: var(--primary-red); transform: scale(1.05); }
+        .nav-btn:disabled { background: #CCC; cursor: not-allowed; opacity: 0.5; }
+        
+        .loading-gallery { text-align: center; color: #666; font-style: italic; padding: 40px; }
         /* =========================== */
 
         .debug-panel {
@@ -321,8 +329,21 @@
     </div>
 
     <div id="tab-gallery" class="tab-section">
-        <div id="gallery-container" class="gallery-wrapper">
-            <div class="loading-gallery">Memuat data galeri...</div>
+        <div class="gallery-wrapper">
+            <div id="gallery-tabs" class="gallery-tabs-container"></div>
+            
+            <div id="gallery-loading" class="loading-gallery">Memuat data galeri...</div>
+
+            <div id="gallery-carousel" class="gallery-carousel-container" style="display:none;">
+                <button id="btn-prev-photo" class="nav-btn" onclick="prevPhoto()">&#10094;</button>
+                
+                <div class="img-container">
+                    <img id="carousel-image" src="" alt="Dokumentasi Lapangan">
+                    <div id="photo-counter" class="photo-counter">1 / 1</div>
+                </div>
+                
+                <button id="btn-next-photo" class="nav-btn" onclick="nextPhoto()">&#10095;</button>
+            </div>
         </div>
     </div>
 
@@ -642,7 +663,6 @@
                 if (row['CITYNAME'] || row['KOTA']) updateWeather(row['CITYNAME'] || row['KOTA']);
                 if (row['TARGETFINISH']) initCountdown(row['TARGETFINISH']);
                 
-                // FIXED GMaps URL Builder
                 let lat = row['LAT'] || row['LATITUDE'];
                 let long = row['LONG'] || row['LONGITUDE'];
                 if (lat !== undefined && long !== undefined) {
@@ -655,35 +675,75 @@
             } catch (error) { log(`Dashboard error: ${error.message}`, 'error'); }
         }
 
-        // ===== DYNAMIC GALLERY FETCHER =====
+        // ===== STATE MANAGEMENT GALLERY =====
         const GALLERY_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ0bXGaASnad47Vz7XXLRh2-XHa5IFsRPH98yNKadgpmhE0PO_CbWrFLZMbYjWZLuO61s_ZeeYPpkh5/pub?gid=0&single=true&output=csv';
+        let galleryDataObj = {};
+        let currentGalleryMonth = '';
+        let currentPhotoIndex = 0;
 
         function convertDriveLink(url) {
             if (!url) return '';
             const driveRegex = /\/file\/d\/(.*?)\//;
             const match = url.match(driveRegex);
-            if (match && match[1]) {
-                return `https://drive.google.com/uc?export=view&id=${match[1]}`;
-            }
+            if (match && match[1]) return `https://drive.google.com/uc?export=view&id=${match[1]}`;
             return url;
         }
 
+        function nextPhoto() {
+            const photos = galleryDataObj[currentGalleryMonth];
+            if (currentPhotoIndex < photos.length - 1) {
+                currentPhotoIndex++;
+                updateCarouselDisplay();
+            }
+        }
+
+        function prevPhoto() {
+            if (currentPhotoIndex > 0) {
+                currentPhotoIndex--;
+                updateCarouselDisplay();
+            }
+        }
+
+        function updateCarouselDisplay() {
+            const photos = galleryDataObj[currentGalleryMonth];
+            if(!photos || photos.length === 0) return;
+
+            const imgElement = document.getElementById('carousel-image');
+            imgElement.style.opacity = 0;
+
+            setTimeout(() => {
+                imgElement.src = photos[currentPhotoIndex];
+                imgElement.style.opacity = 1;
+            }, 150);
+
+            document.getElementById('photo-counter').innerText = `Foto ${currentPhotoIndex + 1} / ${photos.length}`;
+
+            document.getElementById('btn-prev-photo').disabled = (currentPhotoIndex === 0);
+            document.getElementById('btn-next-photo').disabled = (currentPhotoIndex === photos.length - 1);
+        }
+
+        function selectGalleryMonth(month) {
+            currentGalleryMonth = month;
+            currentPhotoIndex = 0;
+
+            document.querySelectorAll('.gallery-tab').forEach(tab => {
+                if(tab.innerText === month) tab.classList.add('active');
+                else tab.classList.remove('active');
+            });
+
+            updateCarouselDisplay();
+        }
+
         function fetchAndRenderGallery() {
-            const container = document.getElementById('gallery-container');
-            
             Papa.parse(GALLERY_CSV_URL, {
-                download: true,
-                header: true,
-                skipEmptyLines: true,
+                download: true, header: true, skipEmptyLines: true,
                 complete: function(results) {
                     const data = results.data;
                     const groupedByMonth = {};
 
                     data.forEach(row => {
                         let cleanRow = {};
-                        for (let key in row) {
-                            cleanRow[String(key).toUpperCase().replace(/\s+/g, '')] = row[key];
-                        }
+                        for (let key in row) cleanRow[String(key).toUpperCase().replace(/\s+/g, '')] = row[key];
 
                         const rawDate = cleanRow['TANGGAL'] || cleanRow['DATE'];
                         const rawLink = cleanRow['LINKFOTO'] || cleanRow['FOTO'] || cleanRow['LINK'];
@@ -695,46 +755,37 @@
                                 const monthYearStr = `${monthNames[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
                                 const imgUrl = convertDriveLink(rawLink);
 
-                                if (!groupedByMonth[monthYearStr]) {
-                                    groupedByMonth[monthYearStr] = [];
-                                }
+                                if (!groupedByMonth[monthYearStr]) groupedByMonth[monthYearStr] = [];
                                 groupedByMonth[monthYearStr].push(imgUrl);
                             }
                         }
                     });
 
-                    let galleryHTML = '';
-                    if (Object.keys(groupedByMonth).length === 0) {
-                        container.innerHTML = '<div class="loading-gallery">Tidak ada data foto yang ditemukan atau format tanggal salah.</div>';
+                    galleryDataObj = groupedByMonth;
+                    const months = Object.keys(galleryDataObj);
+
+                    if (months.length === 0) {
+                        document.getElementById('gallery-loading').innerHTML = 'Tidak ada data foto yang ditemukan atau format tanggal salah.';
                         return;
                     }
 
-                    for (const monthYear in groupedByMonth) {
-                        galleryHTML += `
-                            <div class="month-group">
-                                <h3 class="month-header">${monthYear}</h3>
-                                <div class="photo-grid">
-                        `;
-                        
-                        groupedByMonth[monthYear].forEach(imgSrc => {
-                            galleryHTML += `
-                                <div class="photo-card">
-                                    <img src="${imgSrc}" alt="Dokumentasi Lapangan" loading="lazy">
-                                </div>
-                            `;
-                        });
+                    document.getElementById('gallery-loading').style.display = 'none';
+                    document.getElementById('gallery-carousel').style.display = 'flex';
 
-                        galleryHTML += `
-                                </div>
-                            </div>
-                        `;
-                    }
+                    const tabsContainer = document.getElementById('gallery-tabs');
+                    tabsContainer.innerHTML = '';
+                    months.forEach(month => {
+                        const btn = document.createElement('div');
+                        btn.className = 'gallery-tab';
+                        btn.innerText = month;
+                        btn.onclick = () => selectGalleryMonth(month);
+                        tabsContainer.appendChild(btn);
+                    });
 
-                    container.innerHTML = galleryHTML;
+                    selectGalleryMonth(months[0]);
                 },
                 error: function(err) {
-                    container.innerHTML = '<div style="color:red; text-align:center;">Gagal memuat data galeri.</div>';
-                    console.error('PapaParse Error:', err);
+                    document.getElementById('gallery-loading').innerHTML = '<span style="color:red;">Gagal memuat data galeri.</span>';
                 }
             });
         }
@@ -743,7 +794,7 @@
             initSCurveChart();
             updateDashboard(CONFIG.DEMO_DATA, false); 
             setTimeout(fetchDashboardData, 1000); 
-            setTimeout(fetchAndRenderGallery, 1500); // Tarik data galeri setelah web dimuat
+            setTimeout(fetchAndRenderGallery, 1500); 
         });
 
     </script>
