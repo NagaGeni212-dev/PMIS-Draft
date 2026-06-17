@@ -356,42 +356,111 @@
         .loading-gallery { text-align: center; color: #666; font-style: italic; padding: 40px; }
         /* =========================== */
 
-        /* ===== CCTV PANEL ===== */
-        .cctv-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 12px;
+        /* ===== CCTV PANEL (SPREADSHEET-DRIVEN CAROUSEL MODE) ===== */
+        .cctv-carousel-container {
+            align-items: center;
         }
 
-        .cctv-card {
-            background: white;
-            border-radius: 4px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        .cctv-viewer-container {
+            width: 100%;
+            max-width: 1000px;
+            aspect-ratio: 16 / 9;
+            background: #111;
+            position: relative;
+            border-radius: 6px;
             overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
 
-        .cctv-title {
-            background-color: var(--primary-red);
+        .cctv-viewer-container video,
+        .cctv-viewer-container iframe,
+        .cctv-viewer-container img {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            object-fit: contain;
+            background: #111;
+        }
+
+        .cctv-header-overlay {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            z-index: 5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .cctv-camera-title {
+            background: rgba(0,0,0,0.72);
             color: white;
             padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 13px;
             font-weight: bold;
+        }
+
+        .cctv-status-badge {
+            background: #666;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .cctv-status-badge.active { background: green; }
+        .cctv-status-badge.offline { background: #666; }
+        .cctv-status-badge.warning { background: #FFC000; color: #111; }
+
+        .cctv-message {
+            width: 100%;
+            height: 100%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            padding: 30px;
+            box-sizing: border-box;
+            line-height: 1.5;
+            font-size: 13px;
+        }
+
+        .cctv-info-panel {
+            max-width: 1000px;
+            margin: 14px auto 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 8px;
             font-size: 12px;
         }
 
-        .cctv-player {
-            width: 100%;
-            aspect-ratio: 16 / 9;
-            background: #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
+        .cctv-info-item {
+            background: #F5F5F5;
+            border: 1px solid #E0E0E0;
+            border-radius: 4px;
+            padding: 8px 10px;
         }
 
-        .cctv-player iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
+        .cctv-info-label {
+            color: #666;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+
+        .cctv-info-value {
+            color: #222;
+            font-weight: 600;
+            word-break: break-word;
         }
 
         /* ===== ORGANIZATION CHART PANEL ===== */
@@ -735,35 +804,46 @@
 
         <!-- CCTV PANEL -->
         <div id="cctv" class="content-panel">
-            <div class="cctv-container">
-                <div class="cctv-card">
-                    <div class="cctv-title">CCTV Camera 1 - Main Gate</div>
-                    <div class="cctv-player">
-                        <iframe src="about:blank"></iframe>
+            <div class="gallery-wrapper">
+                <div id="cctv-tabs" class="gallery-tabs-container"></div>
+
+                <div id="cctv-loading" class="loading-gallery">Memuat data CCTV...</div>
+
+                <div id="cctv-carousel" class="gallery-carousel-container cctv-carousel-container" style="display:none;">
+                    <button id="btn-prev-cctv" class="nav-btn" onclick="prevCctv()">&#10094;</button>
+
+                    <div class="cctv-viewer-container">
+                        <div class="cctv-header-overlay">
+                            <div id="cctv-camera-title" class="cctv-camera-title">CCTV</div>
+                            <div id="cctv-status-badge" class="cctv-status-badge">Status</div>
+                        </div>
+
+                        <video id="cctv-video" controls autoplay muted playsinline style="display:none;"></video>
+                        <iframe id="cctv-iframe" src="about:blank" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen style="display:none;"></iframe>
+                        <img id="cctv-image" src="" alt="CCTV Stream" style="display:none;">
+                        <div id="cctv-message" class="cctv-message"></div>
+
+                        <div id="cctv-counter" class="photo-counter">CCTV 1 / 1</div>
                     </div>
+
+                    <button id="btn-next-cctv" class="nav-btn" onclick="nextCctv()">&#10095;</button>
                 </div>
-                <div class="cctv-card">
-                    <div class="cctv-title">CCTV Camera 2 - Work Site</div>
-                    <div class="cctv-player">
-                        <iframe src="about:blank"></iframe>
+
+                <div id="cctv-info-panel" class="cctv-info-panel" style="display:none;">
+                    <div class="cctv-info-item">
+                        <div class="cctv-info-label">Location</div>
+                        <div id="cctv-info-location" class="cctv-info-value">-</div>
                     </div>
-                </div>
-                <div class="cctv-card">
-                    <div class="cctv-title">CCTV Camera 3 - Bridge Progress</div>
-                    <div class="cctv-player">
-                        <iframe src="about:blank"></iframe>
+                    <div class="cctv-info-item">
+                        <div class="cctv-info-label">Stream Type</div>
+                        <div id="cctv-info-type" class="cctv-info-value">-</div>
                     </div>
-                </div>
-                <div class="cctv-card">
-                    <div class="cctv-title">CCTV Camera 4 - Equipment Area</div>
-                    <div class="cctv-player">
-                        <iframe src="about:blank"></iframe>
+                    <div class="cctv-info-item">
+                        <div class="cctv-info-label">Remark</div>
+                        <div id="cctv-info-remark" class="cctv-info-value">-</div>
                     </div>
                 </div>
             </div>
-            <p style="margin-top: 20px; color: #999; text-align: center;">
-                ℹ️ Replace iframe src with actual RTSP stream URLs or HLS streams. Example: rtsp://camera-ip:554/stream or http://camera-ip:8080/stream.m3u8
-            </p>
         </div>
 
         <!-- ORGANIZATION CHART PANEL -->
@@ -850,6 +930,7 @@
     </div>
 
     <script src="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
@@ -1328,6 +1409,242 @@
             });
         }
 
+        // ===== STATE MANAGEMENT CCTV =====
+        const CCTV_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ0bXGaASnad47Vz7XXLRh2-XHa5IFsRPH98yNKadgpmhE0PO_CbWrFLZMbYjWZLuO61s_ZeeYPpkh5/pub?gid=1874534706&single=true&output=csv';
+        let cctvDataList = [];
+        let currentCctvIndex = 0;
+        let hlsPlayer = null;
+
+        function getCleanValue(row, keys, fallback = '') {
+            for (const key of keys) {
+                if (row[key] !== undefined && String(row[key]).trim() !== '') return String(row[key]).trim();
+            }
+            return fallback;
+        }
+
+        function sanitizeStreamUrl(url) {
+            if (!url) return '';
+            const trimmed = String(url).trim();
+            const allowed = /^(https?:\/\/|rtsp:\/\/|rtmp:\/\/|about:blank)/i;
+            return allowed.test(trimmed) ? trimmed : '';
+        }
+
+        function detectStreamType(url, streamType) {
+            const type = String(streamType || '').toLowerCase();
+            const cleanUrl = String(url || '').toLowerCase();
+
+            if (type.includes('hls') || cleanUrl.includes('.m3u8')) return 'hls';
+            if (type.includes('rtsp') || cleanUrl.startsWith('rtsp://')) return 'rtsp';
+            if (type.includes('rtmp') || cleanUrl.startsWith('rtmp://')) return 'rtmp';
+            if (type.includes('webrtc') || type.includes('iframe') || type.includes('embed')) return 'iframe';
+            if (type.includes('mjpeg') || type.includes('image') || cleanUrl.match(/\.(jpg|jpeg|png|gif|webp|mjpeg)(\?|$)/)) return 'image';
+            if (cleanUrl.match(/\.(mp4|webm|ogg)(\?|$)/)) return 'video';
+            return 'iframe';
+        }
+
+        function stopCurrentCctvStream() {
+            const video = document.getElementById('cctv-video');
+            const iframe = document.getElementById('cctv-iframe');
+            const image = document.getElementById('cctv-image');
+            const message = document.getElementById('cctv-message');
+
+            if (hlsPlayer) {
+                hlsPlayer.destroy();
+                hlsPlayer = null;
+            }
+
+            if (video) {
+                video.pause();
+                video.removeAttribute('src');
+                video.load();
+                video.style.display = 'none';
+            }
+
+            if (iframe) {
+                iframe.src = 'about:blank';
+                iframe.style.display = 'none';
+            }
+
+            if (image) {
+                image.removeAttribute('src');
+                image.style.display = 'none';
+            }
+
+            if (message) {
+                message.innerHTML = '';
+                message.style.display = 'none';
+            }
+        }
+
+        function showCctvMessage(htmlMessage) {
+            const message = document.getElementById('cctv-message');
+            message.innerHTML = htmlMessage;
+            message.style.display = 'flex';
+        }
+
+        function loadCctvStream(camera) {
+            stopCurrentCctvStream();
+
+            const safeUrl = sanitizeStreamUrl(camera.url);
+            const streamType = detectStreamType(safeUrl, camera.streamType);
+            const video = document.getElementById('cctv-video');
+            const iframe = document.getElementById('cctv-iframe');
+            const image = document.getElementById('cctv-image');
+
+            if (!safeUrl) {
+                showCctvMessage('Stream URL kosong atau format URL tidak didukung. Gunakan URL http, https, rtsp, atau rtmp.');
+                return;
+            }
+
+            if (streamType === 'rtsp' || streamType === 'rtmp') {
+                showCctvMessage(`
+                    <div>
+                        <strong>Raw ${streamType.toUpperCase()} tidak bisa diputar langsung di browser.</strong><br>
+                        Convert dulu ke HLS (.m3u8), WebRTC, MJPEG, atau embed URL, lalu simpan link hasil convert di spreadsheet.
+                    </div>
+                `);
+                return;
+            }
+
+            if (streamType === 'hls') {
+                video.style.display = 'block';
+                if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    video.src = safeUrl;
+                    video.play().catch(() => {});
+                } else if (window.Hls && Hls.isSupported()) {
+                    hlsPlayer = new Hls({ enableWorker: true, lowLatencyMode: true });
+                    hlsPlayer.loadSource(safeUrl);
+                    hlsPlayer.attachMedia(video);
+                    hlsPlayer.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
+                    hlsPlayer.on(Hls.Events.ERROR, (event, data) => {
+                        if (data && data.fatal) showCctvMessage('Gagal memuat HLS stream. Cek URL .m3u8, CORS, atau status streaming server.');
+                    });
+                } else {
+                    showCctvMessage('Browser ini belum mendukung HLS player.');
+                }
+                return;
+            }
+
+            if (streamType === 'video') {
+                video.style.display = 'block';
+                video.src = safeUrl;
+                video.play().catch(() => {});
+                return;
+            }
+
+            if (streamType === 'image') {
+                image.style.display = 'block';
+                image.src = safeUrl;
+                return;
+            }
+
+            iframe.style.display = 'block';
+            iframe.src = safeUrl;
+        }
+
+        function updateCctvDisplay() {
+            if (!cctvDataList.length) return;
+
+            const camera = cctvDataList[currentCctvIndex];
+            const statusText = camera.status || 'Unknown';
+            const statusLower = statusText.toLowerCase();
+            const badge = document.getElementById('cctv-status-badge');
+
+            document.getElementById('cctv-camera-title').innerText = camera.name || `CCTV ${currentCctvIndex + 1}`;
+            document.getElementById('cctv-counter').innerText = `CCTV ${currentCctvIndex + 1} / ${cctvDataList.length}`;
+            document.getElementById('cctv-info-location').innerText = camera.location || '-';
+            document.getElementById('cctv-info-type').innerText = camera.streamType || detectStreamType(camera.url, camera.streamType).toUpperCase();
+            document.getElementById('cctv-info-remark').innerText = camera.remark || '-';
+
+            badge.innerText = statusText;
+            badge.className = 'cctv-status-badge';
+            if (statusLower.includes('active') || statusLower.includes('online') || statusLower.includes('aktif')) badge.classList.add('active');
+            else if (statusLower.includes('warning') || statusLower.includes('maintenance') || statusLower.includes('gangguan')) badge.classList.add('warning');
+            else badge.classList.add('offline');
+
+            document.querySelectorAll('#cctv-tabs .gallery-tab').forEach((tab, index) => {
+                tab.classList.toggle('active', index === currentCctvIndex);
+            });
+
+            document.getElementById('btn-prev-cctv').disabled = (currentCctvIndex === 0);
+            document.getElementById('btn-next-cctv').disabled = (currentCctvIndex === cctvDataList.length - 1);
+
+            loadCctvStream(camera);
+        }
+
+        function selectCctv(index) {
+            currentCctvIndex = index;
+            updateCctvDisplay();
+        }
+
+        function nextCctv() {
+            if (currentCctvIndex < cctvDataList.length - 1) {
+                currentCctvIndex++;
+                updateCctvDisplay();
+            }
+        }
+
+        function prevCctv() {
+            if (currentCctvIndex > 0) {
+                currentCctvIndex--;
+                updateCctvDisplay();
+            }
+        }
+
+        function fetchAndRenderCCTV() {
+            Papa.parse(CCTV_CSV_URL, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    const data = results.data || [];
+
+                    cctvDataList = data.map((row, index) => {
+                        const cleanRow = {};
+                        for (let key in row) {
+                            cleanRow[String(key).toUpperCase().replace(/[^A-Z0-9]/g, '')] = row[key];
+                        }
+
+                        const name = getCleanValue(cleanRow, ['CAMERANAME', 'CAMERA', 'NAMACAMERA', 'NAMAKAMERA', 'NAMACCTV', 'CCTVNAME', 'CCTV', 'NAMA', 'TITLE'], `CCTV ${index + 1}`);
+                        const location = getCleanValue(cleanRow, ['LOCATION', 'LOKASI', 'AREA', 'ZONA', 'ZONE'], '-');
+                        const streamType = getCleanValue(cleanRow, ['STREAMTYPE', 'TYPE', 'JENIS', 'FORMAT', 'TIPE'], 'Auto');
+                        const url = getCleanValue(cleanRow, ['STREAMURL', 'URL', 'LINK', 'LINKCCTV', 'CCTVURL', 'HLS', 'RTSP', 'EMBEDURL', 'IFRAME'], '');
+                        const status = getCleanValue(cleanRow, ['STATUS', 'CONDITION', 'KONDISI'], 'Active');
+                        const remark = getCleanValue(cleanRow, ['REMARK', 'KETERANGAN', 'NOTES', 'CATATAN', 'DESKRIPSI'], '-');
+
+                        return { name, location, streamType, url, status, remark };
+                    }).filter(camera => camera.url);
+
+                    if (cctvDataList.length === 0) {
+                        document.getElementById('cctv-loading').innerHTML = 'Tidak ada data CCTV yang ditemukan. Pastikan spreadsheet punya kolom StreamURL/URL/Link.';
+                        return;
+                    }
+
+                    const tabsContainer = document.getElementById('cctv-tabs');
+                    tabsContainer.innerHTML = '';
+
+                    cctvDataList.forEach((camera, index) => {
+                        const btn = document.createElement('div');
+                        btn.className = 'gallery-tab';
+                        btn.innerText = camera.name;
+                        btn.onclick = () => selectCctv(index);
+                        tabsContainer.appendChild(btn);
+                    });
+
+                    document.getElementById('cctv-loading').style.display = 'none';
+                    document.getElementById('cctv-carousel').style.display = 'flex';
+                    document.getElementById('cctv-info-panel').style.display = 'grid';
+
+                    selectCctv(0);
+                    log(`✅ CCTV: Menampilkan ${cctvDataList.length} kamera dari Spreadsheet`, 'success');
+                },
+                error: function(err) {
+                    document.getElementById('cctv-loading').innerHTML = '<span style="color:red;">Gagal memuat data CCTV dari spreadsheet.</span>';
+                    log('❌ CCTV CSV gagal dimuat', 'error');
+                }
+            });
+        }
+
         // ===== INITIALIZATION =====
         window.addEventListener('load', () => {
             initMap();
@@ -1335,6 +1652,7 @@
             updateDashboard(CONFIG.DEMO_DATA, false); 
             setTimeout(fetchDashboardData, 1000);
             setTimeout(fetchAndRenderGallery, 1500);
+            setTimeout(fetchAndRenderCCTV, 1800);
         });
 
     </script>
