@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PMIS - Proyek Tol IKN (Full Restoration)</title>
+    <title>PMIS - Proyek Tol IKN</title>
     <link href="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -16,10 +16,12 @@
         .sub-nav div.active { color: black; border-bottom: 2px solid var(--primary-red); }
         .tab-section { display: none; padding: 20px; }
         .active-tab { display: block; }
+        
         /* Dashboard Layout */
-        .dashboard-container { display: grid; grid-template-columns: 250px 1fr 250px; gap: 15px; padding: 20px; }
+        .dashboard-container { display: grid; grid-template-columns: 250px 1fr 250px; gap: 15px; }
         .card { background: white; padding: 15px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 15px; }
-        /* Gallery */
+        
+        /* Gallery Styles */
         .gallery-wrapper { background: white; padding: 20px; border-radius: 6px; }
         .gallery-tabs-container { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
         .gallery-tab { padding: 8px 15px; background: #eee; cursor: pointer; border-radius: 4px; font-size: 12px; }
@@ -32,27 +34,24 @@
 </head>
 <body>
 
-<header><div><strong>PROJECT MANAGEMENT INFORMATION SYSTEM</strong></div></header>
+<header><div><strong>PMIS - TOL IKN SEKSI 5B</strong></div></header>
 
 <div class="sub-nav">
     <div class="active" onclick="switchTab('tab-home', this)">Home</div>
     <div onclick="switchTab('tab-monitoring', this)">Progress Monitoring</div>
     <div onclick="switchTab('tab-gallery', this)">Visualization</div>
     <div onclick="switchTab('tab-cctv', this)">CCTV</div>
-    <div onclick="switchTab('tab-org', this)">Org Chart</div>
+    <div onclick="switchTab('tab-org', this)">Organization Chart</div>
     <div onclick="switchTab('tab-data', this)">Project Data</div>
 </div>
 
 <div id="tab-home" class="tab-section active-tab dashboard-container">
-    <div class="column"><div class="card"><h3>Project Information</h3><div id="val-contract">Memuat...</div></div></div>
-    <div class="center-column"><div class="card"><h3>3D Map View</h3><div id="map" style="height: 300px;"></div></div></div>
-    <div class="column"><div class="card"><h3>Financial Overview</h3><div id="val-hb">Memuat...</div></div></div>
+    <div class="card"><h3>Project Info</h3><div id="val-contract">Memuat...</div></div>
+    <div class="card"><h3>Map View</h3><div id="map" style="height: 250px;"></div></div>
+    <div class="card"><h3>Financial</h3><div id="val-hb">Memuat...</div></div>
 </div>
 
-<div id="tab-monitoring" class="tab-section"><div class="card"><h3>Monitoring</h3><p>Data Monitoring Progress.</p></div></div>
-<div id="tab-cctv" class="tab-section"><div class="card"><h3>Live CCTV</h3><p>Kamera Area Proyek.</p></div></div>
-<div id="tab-org" class="tab-section"><div class="card"><h3>Org Chart</h3><p>PM: Daryanto Aloysius</p></div></div>
-<div id="tab-data" class="tab-section"><div class="card"><h3>Project Data</h3><p>Detail Data Kontrak.</p></div></div>
+<div id="tab-monitoring" class="tab-section"><div class="card"><h3>Progress Monitoring</h3><p>Data akan tampil di sini.</p></div></div>
 
 <div id="tab-gallery" class="tab-section">
     <div class="gallery-wrapper">
@@ -64,6 +63,10 @@
         </div>
     </div>
 </div>
+
+<div id="tab-cctv" class="tab-section"><div class="card"><h3>CCTV</h3><p>Stream offline.</p></div></div>
+<div id="tab-org" class="tab-section"><div class="card"><h3>Org Chart</h3><p>PM: Daryanto Aloysius</p></div></div>
+<div id="tab-data" class="tab-section"><div class="card"><h3>Project Data</h3><p>Data Kontrak.</p></div></div>
 
 <script>
     function switchTab(id, el) {
@@ -86,7 +89,11 @@
         Object.keys(galleryData).forEach(m => {
             let div = document.createElement('div');
             div.className = 'gallery-tab'; div.innerText = m;
-            div.onclick = () => { currentMonth = m; currentIndex = 0; updateCarousel(); };
+            div.onclick = () => { 
+                document.querySelectorAll('.gallery-tab').forEach(t => t.classList.remove('active'));
+                div.classList.add('active');
+                currentMonth = m; currentIndex = 0; updateCarousel(); 
+            };
             document.getElementById('gallery-tabs').appendChild(div);
         });
         currentMonth = Object.keys(galleryData)[0]; updateCarousel();
