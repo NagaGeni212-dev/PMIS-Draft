@@ -1,802 +1,1309 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PMIS - Proyek Tol IKN (Dynamic Scrolling Page)</title>
-    
-    <link href="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.css" rel="stylesheet" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    
-    <style>
-        :root {
-            --primary-red: #8B0000;
-            --dark-blue: #002060;
-            --light-bg: #F2F2F2;
-            --card-gray: #E6E6E6;
-        }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PMIS - Proyek Tol IKN (Dynamic Scrolling Page)</title>
+    <link href="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.css" rel="stylesheet" />
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    
+    <style>
+        :root {
+            --primary-red: #8B0000;
+            --dark-blue: #002060;
+            --light-bg: #F2F2F2;
+            --card-gray: #E6E6E6;
+        }
 
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--light-bg);
-            color: #333;
-            box-sizing: border-box;
-            overflow-x: hidden;
-            overflow-y: auto;
-        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-bg);
+            color: #333;
+            box-sizing: border-box;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
 
-        header {
-            background-color: var(--primary-red);
-            color: white;
-            padding: 10px 20px;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 3px solid #FFC000;
-            gap: 10px;
-        }
-        .header-left { display: flex; align-items: center; gap: 15px; min-width: 300px; }
-        .logo-placeholder { font-weight: bold; font-size: 24px; border: 2px solid white; padding: 2px 10px; }
-        .project-title h1 { margin: 0; font-size: 13px; letter-spacing: 0.5px; }
-        .project-title h2 { margin: 3px 0 0 0; font-size: 11px; font-weight: normal; color: #DDD; }
-        
-        .header-nav { display: flex; gap: 15px; font-size: 11px; flex-wrap: wrap; }
-        .header-nav a { color: white; text-decoration: none; font-weight: bold; }
+        header {
+            background-color: var(--primary-red);
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #FFC000;
+            gap: 10px;
+        }
+        .header-left { display: flex; align-items: center; gap: 15px; min-width: 300px; }
+        .logo-placeholder { font-weight: bold; font-size: 24px; border: 2px solid white; padding: 2px 10px; }
+        .project-title h1 { margin: 0; font-size: 13px; letter-spacing: 0.5px; }
+        .project-title h2 { margin: 3px 0 0 0; font-size: 11px; font-weight: normal; color: #DDD; }
+        
+        .header-nav { display: flex; gap: 15px; font-size: 11px; flex-wrap: wrap; }
+        .header-nav a { color: white; text-decoration: none; font-weight: bold; }
 
-        .sub-nav {
-            background-color: white;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-around;
-            padding: 8px 10px;
-            font-size: 11px;
-            font-weight: 600;
-            border-bottom: 1px solid #CCC;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            gap: 8px;
-        }
-        .sub-nav div { cursor: pointer; color: #555; padding: 2px 5px; }
-        .sub-nav div.active { color: black; border-bottom: 2px solid var(--primary-red); }
+        .sub-nav {
+            background-color: white;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            padding: 8px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            border-bottom: 1px solid #CCC;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            gap: 8px;
+        }
+        .sub-nav div { 
+            cursor: pointer; 
+            color: #555; 
+            padding: 8px 12px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+        .sub-nav div:hover { background-color: #f0f0f0; }
+        .sub-nav div.active { 
+            color: white; 
+            background-color: var(--primary-red);
+            border-bottom: none;
+        }
 
-        /* ===== TAB LOGIC ===== */
-        .tab-section { display: none; }
-        #tab-home.active-tab { display: grid; }
-        #tab-gallery.active-tab { display: block; padding: 12px; }
-        /* ===================== */
+        /* ===== CONTENT PANELS ===== */
+        .content-wrapper {
+            min-height: calc(100vh - 200px);
+        }
 
-        .dashboard-container {
-            grid-template-columns: minmax(240px, 1.2fr) minmax(400px, 4fr) minmax(260px, 1.3fr);
-            gap: 12px;
-            padding: 12px;
-            height: auto;
-            box-sizing: border-box;
-        }
+        .content-panel {
+            display: none;
+            padding: 12px;
+            animation: fadeIn 0.3s ease-in;
+        }
 
-        .column { display: flex; flex-direction: column; gap: 12px; }
-        
-        .card { 
-            background: white; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
-            padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; 
-        }
-        
-        .card-header { 
-            background: var(--primary-red); color: white; text-align: center; font-size: 11px; font-weight: bold; 
-            padding: 6px; margin: -10px -10px 10px -10px; border-top-left-radius: 4px; border-top-right-radius: 4px; 
-        }
-        
-        .qhsse-header { margin-top: 5px !important; }
-        
-        .contract-table { width: 100%; font-size: 11px; border-collapse: collapse; text-align: center; margin-bottom: 10px; }
-        .contract-table th { color: #666; font-weight: normal; padding-bottom: 5px; }
-        .contract-table td { font-weight: bold; font-size: 12px; }
-        .pm-box { text-align: center; font-size: 11px; border-top: 1px solid #EEE; padding-top: 8px; margin-bottom: 8px; }
-        .pm-name { color: var(--primary-red); font-weight: bold; font-size: 12px; }
-        .btn-document { background: #0056b3; color: white; text-align: center; padding: 6px; font-size: 11px; font-weight: bold; border-radius: 3px; text-decoration: none; display: block; margin: 4px 0; }
-        
-        .countdown-title { text-align: center; font-size: 11px; font-weight: bold; color: #444; margin-top: auto; margin-bottom: 4px; padding-top: 10px; }
-        .countdown-box { background: #333; color: #FFC000; font-family: 'Courier New', Courier, monospace; font-size: 16px; text-align: center; padding: 8px; letter-spacing: 0.5px; font-weight: bold; border-radius: 3px; }
-        
-        .card-mini-map { padding: 0 !important; overflow: hidden; border: 1px solid #DDD; }
-        .mini-map-container { position: relative; width: 100%; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 4px; }
-        .mini-map-container iframe { position: absolute; top: 0; left: 0; width: 100% !important; height: 100% !important; border: 0; margin: 0; padding: 0; }
+        .content-panel.active {
+            display: block;
+        }
 
-        .weather-title { text-align: center; font-size: 11px; font-weight: bold; color: var(--dark-blue); margin-top: 6px; margin-bottom: 4px; }
-        .weather-box { display: flex; justify-content: space-between; font-size: 10px; background: var(--dark-blue); color: white; padding: 8px; border-radius: 4px; text-align: center; gap: 4px; }
-        .weather-day-box { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
 
-        .center-column { display: flex; flex-direction: column; gap: 12px; }
-        
-        .map-section { width: 100%; aspect-ratio: 16 / 9; position: relative; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); background: #9cd3db; }
-        #map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-        .map-floating-header { position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.95); padding: 6px 14px; border-radius: 4px; font-size: 11px; font-weight: bold; z-index: 10; }
+        /* ===== HOME PANEL ===== */
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: minmax(240px, 1.2fr) minmax(400px, 4fr) minmax(260px, 1.3fr);
+            gap: 12px;
+            height: auto;
+            box-sizing: border-box;
+        }
 
-        .bottom-charts-row { display: grid; grid-template-columns: minmax(130px, 1.2fr) 3fr minmax(90px, 0.8fr); gap: 12px; height: 160px; }
-        .progress-summary-card { background: var(--dark-blue); color: white; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        
-        .circle-progress { width: 65px; height: 65px; border-radius: 50%; background: conic-gradient(#00FF00 85.5%, #444 0); display: flex; justify-content: center; align-items: center; margin-bottom: 5px; transition: background 0.3s ease; }
-        .circle-inner { width: 52px; height: 52px; background: var(--dark-blue); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 12px; }
-        
-        .curve-s-card { background: var(--dark-blue); color: white; display: flex; flex-direction: column; justify-content: space-between; padding: 10px; }
-        
-        .kpi-column { display: flex; flex-direction: column; gap: 4px; font-size: 9px; font-weight: bold; text-align: center; color: white; justify-content: space-between; }
-        .kpi-tag { padding: 3px 0; border-radius: 2px; transition: background 0.3s ease; }
-        .performa-box { background: var(--dark-blue); padding: 5px 0; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .warning-banner { background: #666; color: white; width: 100%; text-align: center; font-weight: bold; padding: 2px 0; transition: background 0.3s ease, color 0.3s ease; }
+        .column { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+        }
+        
+        .card { 
+            background: white; 
+            border-radius: 4px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+            padding: 10px; 
+            box-sizing: border-box; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        
+        .card-header { 
+            background: var(--primary-red); 
+            color: white; 
+            text-align: center; 
+            font-size: 11px; 
+            font-weight: bold; 
+            padding: 6px; 
+            margin: -10px -10px 10px -10px; 
+            border-top-left-radius: 4px; 
+            border-top-right-radius: 4px; 
+        }
+        
+        .qhsse-header { margin-top: 5px !important; }
+        
+        .contract-table { width: 100%; font-size: 11px; border-collapse: collapse; text-align: center; margin-bottom: 10px; }
+        .contract-table th { color: #666; font-weight: normal; padding-bottom: 5px; }
+        .contract-table td { font-weight: bold; font-size: 12px; }
+        .pm-box { text-align: center; font-size: 11px; border-top: 1px solid #EEE; padding-top: 8px; margin-bottom: 8px; }
+        .pm-name { color: var(--primary-red); font-weight: bold; font-size: 12px; }
+        .btn-document { background: #0056b3; color: white; text-align: center; padding: 6px; font-size: 11px; font-weight: bold; border-radius: 3px; text-decoration: none; display: block; margin: 4px 0; cursor: pointer; border: none; }
+        .btn-document:hover { background: #003d82; }
+        
+        .countdown-title { text-align: center; font-size: 11px; font-weight: bold; color: #444; margin-top: auto; margin-bottom: 4px; padding-top: 10px; }
+        .countdown-box { background: #333; color: #FFC000; font-family: 'Courier New', Courier, monospace; font-size: 16px; text-align: center; padding: 8px; letter-spacing: 0.5px; font-weight: bold; border-radius: 3px; }
+        
+        .card-mini-map {
+            padding: 0 !important;
+            overflow: hidden;
+            border: 1px solid #DDD;
+        }
+        .mini-map-container { 
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            overflow: hidden;
+            border-radius: 4px;
+        }
+        .mini-map-container iframe { 
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100% !important;
+            height: 100% !important;
+            border: 0;
+            margin: 0;
+            padding: 0;
+        }
 
-        .grid-data { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 11px; margin-bottom: 8px; text-align: center; }
-        .grid-label { color: #444; font-size: 10px; margin-bottom: 2px; }
-        .grid-value { background: var(--card-gray); font-weight: bold; padding: 5px; border-radius: 3px; font-size: 11px; }
-        .grid-value.red-text { color: red; }
-        .qhsse-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; text-align: center; font-size: 11px; }
-        .qhsse-val { font-weight: bold; color: red; font-size: 14px; margin-top: 4px; }
-        .btn-action { background: var(--dark-blue); color: white; font-size: 11px; font-weight: bold; text-align: center; padding: 8px; border-radius: 4px; cursor: pointer; margin-top: 4px; }
+        .weather-title { text-align: center; font-size: 11px; font-weight: bold; color: var(--dark-blue); margin-top: 6px; margin-bottom: 4px; }
+        .weather-box { display: flex; justify-content: space-between; font-size: 10px; background: var(--dark-blue); color: white; padding: 8px; border-radius: 4px; text-align: center; gap: 4px; }
+        .weather-day-box { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
 
-        .loading { color: #666; font-style: italic; }
-        .error { color: red; font-weight: bold; }
+        .center-column { display: flex; flex-direction: column; gap: 12px; }
+        
+        .map-section { 
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            position: relative; 
+            border-radius: 4px; 
+            overflow: hidden; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+            background: #9cd3db; 
+        }
+        #map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .map-floating-header { position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.95); padding: 6px 14px; border-radius: 4px; font-size: 11px; font-weight: bold; z-index: 10; }
 
-        /* ===== GALLERY STYLING (CAROUSEL MODE) ===== */
-        .gallery-wrapper {
-            background: white; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); padding: 20px;
-        }
-        
-        .gallery-tabs-container {
-            display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px;
-            border-bottom: 2px solid var(--card-gray); padding-bottom: 12px;
-        }
-        
-        .gallery-tab {
-            padding: 8px 16px; background: #E6E6E6; border-radius: 4px; 
-            cursor: pointer; font-size: 12px; font-weight: bold; color: #555; transition: 0.3s ease;
-        }
-        
-        .gallery-tab:hover { background: #CCC; }
-        .gallery-tab.active { background: var(--primary-red); color: white; }
+        .bottom-charts-row { display: grid; grid-template-columns: minmax(130px, 1.2fr) 3fr minmax(90px, 0.8fr); gap: 12px; height: 160px; }
+        .progress-summary-card { background: var(--dark-blue); color: white; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        
+        .circle-progress { width: 65px; height: 65px; border-radius: 50%; background: conic-gradient(#00FF00 85.5%, #444 0); display: flex; justify-content: center; align-items: center; margin-bottom: 5px; }
+        .circle-inner { width: 52px; height: 52px; background: var(--dark-blue); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 12px; }
+        
+        .curve-s-card { background: var(--dark-blue); color: white; display: flex; flex-direction: column; justify-content: space-between; padding: 10px; }
+        
+        .kpi-column { display: flex; flex-direction: column; gap: 4px; font-size: 9px; font-weight: bold; text-align: center; color: white; justify-content: space-between; }
+        .kpi-tag { padding: 3px 0; border-radius: 2px; transition: background 0.3s ease; }
+        .performa-box { background: var(--dark-blue); padding: 5px 0; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .warning-banner { background: #666; color: white; width: 100%; text-align: center; font-weight: bold; padding: 2px 0; transition: background 0.3s ease, color 0.3s ease; }
 
-        .gallery-carousel-container {
-            display: flex; align-items: center; justify-content: center; gap: 15px; width: 100%;
-        }
+        .grid-data { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 11px; margin-bottom: 8px; text-align: center; }
+        .grid-label { color: #444; font-size: 10px; margin-bottom: 2px; }
+        .grid-value { background: var(--card-gray); font-weight: bold; padding: 5px; border-radius: 3px; font-size: 11px; }
+        .grid-value.red-text { color: red; }
+        .qhsse-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; text-align: center; font-size: 11px; }
+        .qhsse-val { font-weight: bold; color: red; font-size: 14px; margin-top: 4px; }
+        .btn-action { background: var(--dark-blue); color: white; font-size: 11px; font-weight: bold; text-align: center; padding: 8px; border-radius: 4px; cursor: pointer; margin-top: 4px; border: none; }
+        .btn-action:hover { background: #001d47; }
 
-        .img-container {
-            width: 100%; max-width: 800px; aspect-ratio: 16 / 9; background: #222; 
-            position: relative; border-radius: 6px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-        }
+        .loading { color: #666; font-style: italic; }
+        .error { color: red; font-weight: bold; }
 
-        .img-container img {
-            width: 100%; height: 100%; object-fit: contain; /* Menggunakan contain agar foto tidak terpotong */
-            transition: opacity 0.3s ease;
-        }
+        /* ===== PROGRESS MONITORING PANEL ===== */
+        .monitoring-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
 
-        .photo-counter {
-            position: absolute; bottom: 15px; right: 15px; background: rgba(0,0,0,0.7);
-            color: white; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; letter-spacing: 1px;
-        }
+        .maps-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 12px;
+            height: 280px;
+        }
 
-        .nav-btn {
-            background: var(--dark-blue); color: white; border: none; padding: 20px 15px; 
-            font-size: 24px; cursor: pointer; border-radius: 4px; transition: 0.3s ease;
-        }
+        .map-card {
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            overflow: hidden;
+            position: relative;
+            min-height: 280px;
+        }
 
-        .nav-btn:hover:not(:disabled) { background: var(--primary-red); transform: scale(1.05); }
-        .nav-btn:disabled { background: #CCC; cursor: not-allowed; opacity: 0.5; }
-        
-        .loading-gallery { text-align: center; color: #666; font-style: italic; padding: 40px; }
-        /* =========================== */
+        .map-card-title {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255,255,255,0.95);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 10;
+        }
 
-        .debug-panel {
-            position: fixed; bottom: 10px; right: 10px; background: rgba(0, 0, 0, 0.85); color: #0f0;
-            padding: 10px; border-radius: 4px; font-size: 10px; max-width: 350px; max-height: 200px;
-            overflow-y: auto; font-family: monospace; z-index: 1000; display: none; border: 1px solid #0f0;
-        }
-        .debug-panel.show { display: block; }
+        .progress-table-card {
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 12px;
+            overflow-x: auto;
+            max-height: 400px;
+        }
 
-        @media (max-width: 1024px) {
-            .dashboard-container { grid-template-columns: 1fr; }
-        }
-    </style>
+        .progress-table {
+            width: 100%;
+            font-size: 11px;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        .progress-table th {
+            background-color: var(--primary-red);
+            color: white;
+            padding: 8px;
+            font-weight: bold;
+            text-align: center;
+            position: sticky;
+            top: 0;
+        }
+
+        .progress-table td {
+            padding: 8px;
+            border-bottom: 1px solid #EEE;
+            text-align: center;
+        }
+
+        .progress-table tr:hover {
+            background-color: #F5F5F5;
+        }
+
+        /* ===== PROGRESS VISUALIZATION PANEL ===== */
+        .slideshow-container {
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 12px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .slideshow-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #333;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .slide {
+            display: none;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .slide.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .slide img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .slide-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .slide-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+            gap: 12px;
+        }
+
+        .slide-btn {
+            background: var(--primary-red);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .slide-btn:hover {
+            background: #6b0000;
+        }
+
+        .slide-counter {
+            flex: 1;
+            text-align: center;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .slide-thumbnail-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .slide-thumbnail {
+            cursor: pointer;
+            border: 2px solid #DDD;
+            border-radius: 4px;
+            overflow: hidden;
+            aspect-ratio: 1;
+            background: #EEE;
+        }
+
+        .slide-thumbnail.active {
+            border-color: var(--primary-red);
+        }
+
+        .slide-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* ===== CCTV PANEL ===== */
+        .cctv-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 12px;
+        }
+
+        .cctv-card {
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .cctv-title {
+            background-color: var(--primary-red);
+            color: white;
+            padding: 8px 12px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .cctv-player {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .cctv-player iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* ===== ORGANIZATION CHART PANEL ===== */
+        .orgchart-container {
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 12px;
+            overflow: auto;
+            max-height: 700px;
+        }
+
+        .org-box {
+            background: var(--primary-red);
+            color: white;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 8px;
+            text-align: center;
+            min-width: 150px;
+            display: inline-block;
+        }
+
+        .org-title {
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .org-name {
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        .org-line {
+            height: 2px;
+            background: #ccc;
+            margin: 12px 0;
+        }
+
+        /* ===== PROJECT DATA PANEL ===== */
+        .project-data-container {
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 12px;
+            overflow: auto;
+        }
+
+        .embed-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .embed-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .debug-panel {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.85);
+            color: #0f0;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 10px;
+            max-width: 350px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            z-index: 1000;
+            display: none;
+            border: 1px solid #0f0;
+        }
+        .debug-panel.show { display: block; }
+
+        /* ===== RESPONSIVE BREAKPOINTS ===== */
+        @media (max-width: 1200px) {
+            .maps-row { 
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                height: 250px;
+            }
+            .map-card {
+                min-height: 250px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .maps-row { 
+                grid-template-columns: 1fr;
+                height: 280px;
+            }
+            .map-card {
+                min-height: 280px;
+            }
+            .dashboard-container { 
+                grid-template-columns: 1fr; 
+            }
+            .bottom-charts-row { 
+                grid-template-columns: 1fr; 
+                height: auto; 
+            }
+            .cctv-container {
+                grid-template-columns: 1fr;
+            }
+            header {
+                flex-direction: column;
+                gap: 8px;
+            }
+            .header-left {
+                min-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .sub-nav {
+                font-size: 10px;
+            }
+            .sub-nav div {
+                padding: 6px 8px;
+            }
+            .maps-row {
+                height: 220px;
+            }
+            .map-card {
+                min-height: 220px;
+            }
+            .progress-table {
+                font-size: 10px;
+            }
+            .progress-table th, .progress-table td {
+                padding: 6px 4px;
+            }
+        }
+    </style>
 </head>
 <body>
 
-    <header>
-        <div class="header-left">
-            <div class="logo-placeholder">HK</div>
-            <div class="project-title">
-                <h1>PROJECT MANAGEMENT INFORMATION SYSTEM</h1>
-                <h2>PROYEK TOL IKN SEGMEN JEMBATAN P. BALANG - SP. RIKO SEKSI 5B</h2>
-            </div>
-        </div>
-        <div class="header-nav">
-            <a href="#">Lean Management</a>
-            <a href="#">Financial Dashboard</a>
-            <a href="#">Risk Management</a>
-            <a href="#">BIM 360</a>
-        </div>
-    </header>
-
-    <div class="sub-nav">
-        <div class="active" onclick="switchTab('home', this)">Home</div>
-        <div onclick="switchTab('monitoring', this)">Progress Monitoring</div>
-        <div onclick="switchTab('gallery', this)">Progress Visualization</div>
-        <div onclick="switchTab('cctv', this)">CCTV</div>
-        <div onclick="switchTab('org', this)">Organization Chart</div>
-        <div onclick="switchTab('data', this)">Project Data</div>
-    </div>
-
-    <div id="tab-home" class="tab-section active-tab dashboard-container">
-        <div class="column">
-            <div class="card">
-                <div class="card-header">Project Information</div>
-                <div style="text-align: center; margin: 10px 0;"><strong style="color: #0056b3;">KEMENPU | HK</strong></div>
-                
-                <table class="contract-table">
-                    <tr><th>Contract Value</th><th>Contract Duration</th></tr>
-                    <tr><td id="val-contract" class="loading">Memuat...</td><td id="val-duration" class="loading">Memuat...</td></tr>
-                </table>
-                
-                <div class="pm-box">
-                    <div>Project Manager:</div>
-                    <div class="pm-name" id="val-project-manager" class="loading">Memuat...</div>
-                </div>
-                
-                <a href="#" class="btn-document">Contract Document</a>
-                
-                <div class="countdown-title">Sisa Waktu Pekerjaan</div>
-                <div id="countdown" class="countdown-box">000 Hari 00:00:00</div>
-            </div>
-            
-            <div class="card card-mini-map">
-                <div class="mini-map-container">
-                    <iframe id="val-gmaps" src="https://maps.google.com/maps?q=-1.1274,116.6856&z=14&output=embed" allowfullscreen="" loading="lazy"></iframe>
-                </div>
-            </div>
-            
-            <div class="weather-title" id="weather-city-label">Prakiraan Cuaca</div>
-            <div class="weather-box" id="weather-container">
-                <div class="loading" style="width: 100%; color: white;">Memuat cuaca...</div>
-            </div>
-        </div>
-
-        <div class="center-column">
-            <div class="map-section">
-                <div class="map-floating-header">
-                    <span style="color:#e60000; font-weight:bold;">⬅ 3D MAP VIEW</span>
-                    <span>CARTO-GL VOYAGER</span>
-                </div>
-                <div id="map"></div>
-            </div>
-
-            <div class="bottom-charts-row">
-                <div class="card progress-summary-card">
-                    <div id="val-month-year" style="font-size: 10px; margin-bottom: 5px;">Progress Summary<br>Memuat...</div>
-                    <div class="circle-progress">
-                        <div class="circle-inner" id="val-progress-summary" class="loading">Memuat...</div>
-                    </div>
-                    <div id="val-plan-dev" style="font-size: 8px; color: #AAA;">Plan: - | Dev: -</div>
-                </div>
-
-                <div class="card curve-s-card">
-                    <div class="card-header" style="background:none; text-align:left; margin:0; padding:0;">KURVA S</div>
-                    <div style="position: relative; height: 120px; width: 100%; margin-top: 5px;">
-                        <canvas id="sCurveChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="kpi-column">
-                    <div id="tag-spi" class="kpi-tag" style="background:#666;">SPI<br><span id="val-spi">-</span></div>
-                    <div id="tag-epi" class="kpi-tag" style="background:#666;">EPI<br><span id="val-epi">-</span></div>
-                    <div id="tag-cpi" class="kpi-tag" style="background:#666;">CPI<br><span id="val-cpi">-</span></div>
-                    <div class="performa-box">
-                        <div>PERFORMA</div>
-                        <div id="val-performa" class="warning-banner">MEMUAT...</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="column">
-            <div class="card">
-                <div class="card-header">Overview Finansial</div>
-                
-                <div class="grid-data">
-                    <div><div class="grid-label">HB</div><div class="grid-value red-text" id="val-hb" class="loading">Memuat...</div></div>
-                    <div><div class="grid-label">HPP ARP</div><div class="grid-value" id="val-hpp-arp" class="loading">Memuat...</div></div>
-                    <div><div class="grid-label">Real Progress</div><div class="grid-value red-text" id="val-real-progress" class="loading">Memuat...</div></div>
-                    <div><div class="grid-label">HPP Real</div><div class="grid-value" id="val-hpp-real" class="loading">Memuat...</div></div>
-                </div>
-
-                <div style="text-align:center; font-size:10px; margin-bottom:2px;">EAC %</div>
-                <div class="grid-value" style="text-align:center; margin-bottom:12px;" id="val-eac" class="loading">Memuat...</div>
-
-                <div class="card-header" style="margin-top:5px;">Solvabilitas</div>
-                <div class="grid-data">
-                    <div><div class="grid-label">Cash In</div><div class="grid-value red-text" id="val-cash-in" class="loading">Memuat...</div></div>
-                    <div><div class="grid-label">Defisit / Surplus</div><div class="grid-value" id="val-defisit" class="loading">Memuat...</div></div>
-                </div>
-
-                <div class="card-header qhsse-header">QHSSE</div>
-                <div class="qhsse-row">
-                    <div><div class="grid-label">NC</div><div class="qhsse-val" id="val-nc">0</div></div>
-                    <div><div class="grid-label">Nearmiss</div><div class="qhsse-val" id="val-nearmiss">0</div></div>
-                    <div><div class="grid-label">Fatality</div><div class="qhsse-val" id="val-fatality">0</div></div>
-                </div>
-            </div>
-
-            <div class="btn-action">Issue Log & Action Plan</div>
-            <div class="btn-action">3 Top Risk</div>
-        </div>
-    </div>
-
-    <div id="tab-gallery" class="tab-section">
-        <div class="gallery-wrapper">
-            <div id="gallery-tabs" class="gallery-tabs-container"></div>
-            
-            <div id="gallery-loading" class="loading-gallery">Memuat data galeri...</div>
-
-            <div id="gallery-carousel" class="gallery-carousel-container" style="display:none;">
-                <button id="btn-prev-photo" class="nav-btn" onclick="prevPhoto()">&#10094;</button>
-                
-                <div class="img-container">
-                    <img id="carousel-image" src="" alt="Dokumentasi Lapangan">
-                    <div id="photo-counter" class="photo-counter">1 / 1</div>
-                </div>
-                
-                <button id="btn-next-photo" class="nav-btn" onclick="nextPhoto()">&#10095;</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="tab-monitoring" class="tab-section"><div class="gallery-wrapper">Data Progress Monitoring (Segera Hadir)</div></div>
-    <div id="tab-cctv" class="tab-section"><div class="gallery-wrapper">Tangkapan CCTV (Segera Hadir)</div></div>
-    <div id="tab-org" class="tab-section"><div class="gallery-wrapper">Struktur Organisasi (Segera Hadir)</div></div>
-    <div id="tab-data" class="tab-section"><div class="gallery-wrapper">Data Proyek Lengkap (Segera Hadir)</div></div>
-
-    <div class="debug-panel" id="debugPanel">
-        <div style="font-weight:bold; border-bottom:1px solid #0f0; margin-bottom:5px;">DIAGNOSTIC PANEL</div>
-    </div>
-
-    <script src="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <script>
-        // ===== TAB SWITCHING LOGIC =====
-        function switchTab(tabId, element) {
-            document.querySelectorAll('.sub-nav div').forEach(el => el.classList.remove('active'));
-            element.classList.add('active');
-            
-            document.querySelectorAll('.tab-section').forEach(el => el.classList.remove('active-tab'));
-            const target = document.getElementById('tab-' + tabId);
-            if(target) target.classList.add('active-tab');
-        }
-
-        // ===== DEBUG UTILITIES =====
-        const DEBUG = true;
-        const debugPanel = document.getElementById('debugPanel');
-        
-        function log(message, type = 'info') {
-            const timestamp = new Date().toLocaleTimeString();
-            let icon = '📝';
-            let color = '#0f0';
-            if(type === 'error') { icon = '❌'; color = '#f55'; }
-            else if(type === 'warn') { icon = '⚠️'; color = '#fd0'; }
-            else if(type === 'success') { icon = '✅'; color = '#0f0'; }
-            
-            const logEntry = `<div style="color:${color}; margin-bottom:3px;">[${timestamp}] ${icon} ${message}</div>`;
-            console.log(`[${timestamp}] ${type.toUpperCase()}: ${message}`);
-            
-            if (DEBUG) {
-                debugPanel.classList.add('show');
-                debugPanel.innerHTML += logEntry;
-                debugPanel.scrollTop = debugPanel.scrollHeight;
-            }
-        }
-
-        // ===== CONFIGURATION =====
-        const CONFIG = {
-            APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbytNRfyL2vWb_CzK9P4nSaGh0PIiwTOA58f6uOioP_-2rp-LcAAC1YbZ7k3KCCKrjg3/exec',
-            TIMEOUT: 12000, 
-            DEMO_DATA: {
-                ContractValue: 'Rp 500 Miliar', ContractDuration: '24 Bulan',
-                ProjectManager: 'Daryanto Aloysius', StartDate: '2024-01-01', TargetFinish: '2026-12-31', 
-                CityName: 'Balikpapan', Lat: '-1.1274', Long: '116.6856',
-                ProgressSummary: '85.5', ProgressPlan: '92.358', 
-                HB: '92.4%', HPP_ARP: '88.2%', RealProgress: '85.5%', HPP_Real: '87.9%',
-                EAC: '101.2%', CashIn: 'Rp 420 M', DefisitSurplus: 'Rp 80 M', NC: '2', Nearmiss: '5', Fatality: '0',
-                P1: 5, P2: 12, P3: 20, P4: 28, P5: 35, P6: 45, P7: 55, P8: 68, P9: 78, P10: 88, P11: 92.358, P12: 100,
-                A1: 4.5, A2: 10, A3: 18, A4: 25, A5: 32, A6: 40, A7: 50, A8: 65, A9: 75, A10: 85.5
-            }
-        };
-
-        // ===== MAP & STATE =====
-        let countdownState = { intervalId: null, currentTargetDate: null, countdownStarted: false };
-
-        const map = new maplibregl.Map({
-            container: 'map',
-            style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json', 
-            center: [116.6856, -1.1274], zoom: 13.5, pitch: 60, bearing: 25, antialias: true
-        });
-
-        window.addEventListener('resize', () => map.resize());
-
-        // ===== DYNAMIC 5-DAY WEATHER API =====
-        function getWeatherDetail(code) {
-            if (code === 0) return { icon: '☀️', text: 'Cerah' };
-            if (code === 1 || code === 2 || code === 3) return { icon: '⛅', text: 'Berawan' };
-            if (code === 45 || code === 48) return { icon: '🌫️', text: 'Kabut' };
-            if (code >= 51 && code <= 55) return { icon: '🌧️', text: 'Gerimis' };
-            if (code >= 61 && code <= 65) return { icon: '🌧️', text: 'Hujan' };
-            if (code >= 80 && code <= 82) return { icon: '🌧️', text: 'Hujan' };
-            if (code >= 95 && code <= 99) return { icon: '⛈️', text: 'Badai' };
-            return { icon: '☁️', text: 'Awan' }; 
-        }
-
-        async function updateWeather(cityName) {
-            if (!cityName) return;
-            document.getElementById('weather-city-label').innerText = `Cuaca: ${cityName}`;
-            try {
-                const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1`);
-                const geoData = await geoRes.json();
-                if (!geoData.results || geoData.results.length === 0) {
-                    document.getElementById('weather-container').innerHTML = '<div style="width:100%; color:red;">Kota tidak ditemukan</div>';
-                    return;
-                }
-                const lat = geoData.results[0].latitude, lon = geoData.results[0].longitude;
-                const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,weathercode&timezone=auto`);
-                const weatherData = await weatherRes.json();
-                
-                const days = weatherData.daily.time.slice(0, 5), temps = weatherData.daily.temperature_2m_max.slice(0, 5), codes = weatherData.daily.weathercode.slice(0, 5);
-                const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-                
-                let weatherHTML = '';
-                for(let i=0; i<5; i++) {
-                    const date = new Date(days[i]);
-                    const wDetail = getWeatherDetail(codes[i]);
-                    weatherHTML += `<div class="weather-day-box"><strong>${dayNames[date.getDay()]}</strong><div style="font-size:18px;">${wDetail.icon}</div><div style="font-size:11px;">${Math.round(temps[i])}°C</div><div style="font-size:8px; opacity:0.8;">${wDetail.text}</div></div>`;
-                }
-                document.getElementById('weather-container').innerHTML = weatherHTML;
-            } catch (error) { document.getElementById('weather-container').innerHTML = '<div style="width:100%; color:red;">Gagal memuat cuaca</div>'; }
-        }
-
-        // ===== COUNTDOWN TIMER =====
-        function initCountdown(targetFinishDate = null) {
-            let targetDate = targetFinishDate ? new Date(targetFinishDate) : new Date(new Date().setDate(new Date().getDate() + 226));
-            if (isNaN(targetDate.getTime())) targetDate = new Date(new Date().setDate(new Date().getDate() + 226));
-            
-            targetDate.setHours(23, 59, 59, 999);
-            if (countdownState.countdownStarted && countdownState.currentTargetDate && countdownState.currentTargetDate.getTime() === targetDate.getTime()) return;
-            if (countdownState.intervalId !== null) clearInterval(countdownState.intervalId);
-            
-            countdownState.currentTargetDate = targetDate;
-            countdownState.countdownStarted = true;
-
-            const el = document.getElementById('countdown');
-            function update() {
-                const dist = targetDate.getTime() - new Date().getTime();
-                if (dist < 0) { el.innerHTML = "PROYEK SELESAI"; clearInterval(countdownState.intervalId); countdownState.countdownStarted = false; return; }
-                el.innerHTML = `${String(Math.floor(dist / (1000 * 60 * 60 * 24))).padStart(3, '0')} Hari ${String(Math.floor((dist % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))).padStart(2, '0')}:${String(Math.floor((dist % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0')}:${String(Math.floor((dist % (1000 * 60)) / 1000)).padStart(2, '0')}`;
-            }
-            update();
-            countdownState.intervalId = setInterval(update, 1000);
-        }
-
-        // ===== S-CURVE CHART INITIALIZATION =====
-        let sCurveChart;
-        function initSCurveChart() {
-            const ctx = document.getElementById('sCurveChart').getContext('2d');
-            sCurveChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: [], 
-                    datasets: [
-                        { label: 'Plan (%)', data: [], borderColor: '#FFC000', backgroundColor: 'rgba(255, 192, 0, 0.1)', borderWidth: 2, tension: 0.4, fill: true, spanGaps: true },
-                        { label: 'Actual (%)', data: [], borderColor: '#00FF00', backgroundColor: 'rgba(0, 255, 0, 0.1)', borderWidth: 2, tension: 0.4, fill: true, spanGaps: true }
-                    ]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: true, labels: { color: 'white', boxWidth: 10, font: { size: 9 } } } },
-                    scales: {
-                        y: { beginAtZero: true, max: 100, ticks: { color: '#AAA', font: { size: 9 }, stepSize: 25 }, grid: { color: 'rgba(255,255,255,0.1)' } },
-                        x: { ticks: { color: '#AAA', font: { size: 9 } }, grid: { display: false } }
-                    }
-                }
-            });
-        }
-
-        // ===== DYNAMIC S-CURVE UPDATER =====
-        function updateSCurve(row, isLive) {
-            if (!sCurveChart) return;
-
-            let maxIndex = 0;
-            for(let i = 1; i <= 60; i++) {
-                if(row['P'+i] !== undefined && String(row['P'+i]).trim() !== '') maxIndex = Math.max(maxIndex, i);
-                if(row['A'+i] !== undefined && String(row['A'+i]).trim() !== '') maxIndex = Math.max(maxIndex, i);
-            }
-
-            if (maxIndex === 0 && isLive) {
-                log('❌ Kurva S: P1 s/d P60 dan A1 s/d A60 KOSONG/TIDAK ADA!', 'error');
-                sCurveChart.data.labels = ['Periksa Apps Script Anda'];
-                sCurveChart.data.datasets[0].data = [0];
-                sCurveChart.data.datasets[1].data = [0];
-                sCurveChart.update();
-                return;
-            }
-
-            let startDateRaw = row['STARTDATE'] || row['TGLMULAI'] || row['TANGGALMULAI'];
-            let startDate = new Date(startDateRaw);
-            if (isNaN(startDate.getTime())) startDate = new Date('2024-01-01');
-
-            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-            let labels = [], planData = [], actualData = [];
-
-            for(let i = 1; i <= maxIndex; i++) {
-                let d = new Date(startDate);
-                d.setMonth(d.getMonth() + (i - 1));
-                labels.push(`${monthNames[d.getMonth()]} '${d.getFullYear().toString().slice(-2)}`);
-
-                let pVal = row['P'+i];
-                if(pVal !== undefined && String(pVal).trim() !== '') {
-                    let num = parseFloat(String(pVal).replace(/%/g, '').replace(/,/g, '.').trim());
-                    planData.push(isNaN(num) ? null : num);
-                } else { planData.push(null); }
-
-                let aVal = row['A'+i];
-                if(aVal !== undefined && String(aVal).trim() !== '') {
-                    let num = parseFloat(String(aVal).replace(/%/g, '').replace(/,/g, '.').trim());
-                    actualData.push(isNaN(num) ? null : num);
-                } else { actualData.push(null); }
-            }
-
-            sCurveChart.data.labels = labels;
-            sCurveChart.data.datasets[0].data = planData;
-            sCurveChart.data.datasets[1].data = actualData;
-            sCurveChart.update();
-            log(`✅ Kurva S: Menampilkan ${maxIndex} Bulan`, 'success');
-        }
-
-        // ===== FETCH WITH TIMEOUT =====
-        async function fetchWithTimeout(url, options = {}) {
-            const { timeout = 10000 } = options;
-            const controller = new AbortController();
-            const id = setTimeout(() => controller.abort(), timeout);
-            try {
-                const response = await fetch(url, { ...options, signal: controller.signal, mode: 'cors' });
-                clearTimeout(id); return response;
-            } catch (error) { clearTimeout(id); throw error; }
-        }
-
-        function updateProgressCircle(progressValue, planValue) {
-            let pNum = parseFloat(String(progressValue).replace(/%/g, '').replace(/,/g, '.').trim());
-            let plNum = parseFloat(String(planValue || '0').replace(/%/g, '').replace(/,/g, '.').trim());
-            if (!isNaN(pNum)) {
-                let color = (!isNaN(plNum) && plNum > pNum) ? '#FF0000' : '#00FF00'; 
-                document.querySelector('.circle-progress').style.background = `conic-gradient(${color} ${(pNum / 100) * 360}deg, #444 0deg)`;
-            }
-        }
-
-        async function fetchDashboardData() {
-            log('🚀 Menarik data LIVE dari Spreadsheet...', 'info');
-            try {
-                const response = await fetchWithTimeout(CONFIG.APPS_SCRIPT_URL, { timeout: CONFIG.TIMEOUT });
-                if (!response.ok) throw new Error(`HTTP Error`);
-                const data = await response.json();
-                
-                if (data && Array.isArray(data) && data.length > 0) updateDashboard(data[0], true);
-                else if (data && typeof data === 'object') updateDashboard(data, true);
-                else throw new Error('Format Data Tidak Dikenali');
-            } catch (error) {
-                log(`❌ Fetch Live Gagal. Menggunakan Data Demo...`, 'error');
-                updateDashboard(CONFIG.DEMO_DATA, false);
-            }
-        }
-
-        // ===== MAIN DASHBOARD UPDATER =====
-        function updateDashboard(rawRow, isLive = false) {
-            try {
-                const row = {};
-                for (let key in rawRow) {
-                    if (rawRow.hasOwnProperty(key)) {
-                        let cleanKey = String(key).toUpperCase().replace(/[^A-Z0-9]/g, '');
-                        row[cleanKey] = rawRow[key];
-                    }
-                }
-
-                if (isLive) {
-                    log(`Data diterima. Jumlah kolom: ${Object.keys(row).length}`, 'info');
-                    console.log("DAFTAR KOLOM TERBACA DARI SPREADSHEET:", Object.keys(row));
-                }
-
-                const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-                const today = new Date();
-                document.getElementById('val-month-year').innerHTML = `Progress Summary<br>${monthNames[today.getMonth()]} ${today.getFullYear()}`;
-
-                const fieldsToUpdate = {
-                    'val-contract': 'CONTRACTVALUE', 'val-duration': 'CONTRACTDURATION',
-                    'val-project-manager': 'PROJECTMANAGER', 'val-progress-summary': 'PROGRESSSUMMARY',
-                    'val-hb': 'HB', 'val-hpp-arp': 'HPPARP', 'val-real-progress': 'REALPROGRESS',
-                    'val-hpp-real': 'HPPREAL', 'val-eac': 'EAC', 'val-cash-in': 'CASHIN',
-                    'val-defisit': 'DEFISITSURPLUS', 'val-nc': 'NC', 'val-nearmiss': 'NEARMISS', 'val-fatality': 'FATALITY'
-                };
-
-                for (const [elementId, dataKey] of Object.entries(fieldsToUpdate)) {
-                    const el = document.getElementById(elementId);
-                    if (el && row[dataKey] !== undefined) {
-                        let val = row[dataKey];
-                        if (dataKey === 'PROGRESSSUMMARY' && !String(val).includes('%')) val = `${val}%`;
-                        el.innerText = val;
-                        el.classList.remove('loading', 'error');
-                    }
-                }
-
-                const parseToNum = (val) => parseFloat(String(val || '0').replace(/%/g, '').replace(/,/g, '.').trim()) || 0;
-                let actSummary = parseToNum(row['PROGRESSSUMMARY']);
-                let planSummary = parseToNum(row['PROGRESSPLAN']);
-                let hppReal = parseToNum(row['HPPREAL']);
-                let hppArp = parseToNum(row['HPPARP']);
-
-                let spi = planSummary !== 0 ? (actSummary / planSummary) : 0;
-                let epi = hppArp !== 0 ? (hppArp / hppReal) : 0;
-                let cpi = hppReal !== 0 ? ((1 / hppReal) * 100) : 0;
-
-                document.getElementById('val-spi').innerText = spi.toFixed(2);
-                document.getElementById('tag-spi').style.background = spi < 1 ? 'red' : 'green';
-                document.getElementById('val-epi').innerText = epi.toFixed(2);
-                document.getElementById('tag-epi').style.background = epi < 1 ? 'red' : 'green';
-                document.getElementById('val-cpi').innerText = cpi.toFixed(2);
-                document.getElementById('tag-cpi').style.background = cpi < 1 ? 'red' : 'green';
-
-                let pBanner = document.getElementById('val-performa');
-                if (spi >= 1 && epi >= 1 && cpi >= 1) { pBanner.innerText = 'EXCELLENT'; pBanner.style.background = 'green'; pBanner.style.color = 'white'; }
-                else if (spi < 1 && epi < 1 && cpi < 1) { pBanner.innerText = 'CRITICAL'; pBanner.style.background = 'red'; pBanner.style.color = 'white'; }
-                else { pBanner.innerText = 'WARNING'; pBanner.style.background = '#FFFF00'; pBanner.style.color = 'black'; }
-
-                if (row['PROGRESSSUMMARY'] !== undefined && row['PROGRESSPLAN'] !== undefined) {
-                    updateProgressCircle(row['PROGRESSSUMMARY'], row['PROGRESSPLAN']);
-                    let devVal = actSummary - planSummary;
-                    let pText = String(row['PROGRESSPLAN']).includes('%') ? row['PROGRESSPLAN'] : `${row['PROGRESSPLAN']}%`;
-                    document.getElementById('val-plan-dev').innerText = `Plan: ${pText} | Dev: ${devVal > 0 ? '+' : ''}${devVal.toFixed(3)}%`;
-                }
-
-                updateSCurve(row, isLive);
-
-                if (row['CITYNAME'] || row['KOTA']) updateWeather(row['CITYNAME'] || row['KOTA']);
-                if (row['TARGETFINISH']) initCountdown(row['TARGETFINISH']);
-                
-                let lat = row['LAT'] || row['LATITUDE'];
-                let long = row['LONG'] || row['LONGITUDE'];
-                if (lat !== undefined && long !== undefined) {
-                    const gIframe = document.getElementById('val-gmaps');
-                    if (gIframe) {
-                        gIframe.src = `https://maps.google.com/maps?q=${lat},${long}&z=14&output=embed`;
-                        log(`✅ GMaps diupdate ke Lat: ${lat}, Long: ${long}`, 'success');
-                    }
-                }
-            } catch (error) { log(`Dashboard error: ${error.message}`, 'error'); }
-        }
-
-        // ===== STATE MANAGEMENT GALLERY =====
-        const GALLERY_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ0bXGaASnad47Vz7XXLRh2-XHa5IFsRPH98yNKadgpmhE0PO_CbWrFLZMbYjWZLuO61s_ZeeYPpkh5/pub?gid=0&single=true&output=csv';
-        let galleryDataObj = {};
-        let currentGalleryMonth = '';
-        let currentPhotoIndex = 0;
-
-        function convertDriveLink(url) {
-            if (!url) return '';
-            const driveRegex = /\/file\/d\/(.*?)\//;
-            const match = url.match(driveRegex);
-            if (match && match[1]) return `https://drive.google.com/uc?export=view&id=${match[1]}`;
-            return url;
-        }
-
-        function nextPhoto() {
-            const photos = galleryDataObj[currentGalleryMonth];
-            if (currentPhotoIndex < photos.length - 1) {
-                currentPhotoIndex++;
-                updateCarouselDisplay();
-            }
-        }
-
-        function prevPhoto() {
-            if (currentPhotoIndex > 0) {
-                currentPhotoIndex--;
-                updateCarouselDisplay();
-            }
-        }
-
-        function updateCarouselDisplay() {
-            const photos = galleryDataObj[currentGalleryMonth];
-            if(!photos || photos.length === 0) return;
-
-            const imgElement = document.getElementById('carousel-image');
-            imgElement.style.opacity = 0;
-
-            setTimeout(() => {
-                imgElement.src = photos[currentPhotoIndex];
-                imgElement.style.opacity = 1;
-            }, 150);
-
-            document.getElementById('photo-counter').innerText = `Foto ${currentPhotoIndex + 1} / ${photos.length}`;
-
-            document.getElementById('btn-prev-photo').disabled = (currentPhotoIndex === 0);
-            document.getElementById('btn-next-photo').disabled = (currentPhotoIndex === photos.length - 1);
-        }
-
-        function selectGalleryMonth(month) {
-            currentGalleryMonth = month;
-            currentPhotoIndex = 0;
-
-            document.querySelectorAll('.gallery-tab').forEach(tab => {
-                if(tab.innerText === month) tab.classList.add('active');
-                else tab.classList.remove('active');
-            });
-
-            updateCarouselDisplay();
-        }
-
-        function fetchAndRenderGallery() {
-            Papa.parse(GALLERY_CSV_URL, {
-                download: true, header: true, skipEmptyLines: true,
-                complete: function(results) {
-                    const data = results.data;
-                    const groupedByMonth = {};
-
-                    data.forEach(row => {
-                        let cleanRow = {};
-                        for (let key in row) cleanRow[String(key).toUpperCase().replace(/\s+/g, '')] = row[key];
-
-                        const rawDate = cleanRow['TANGGAL'] || cleanRow['DATE'];
-                        const rawLink = cleanRow['LINKFOTO'] || cleanRow['FOTO'] || cleanRow['LINK'];
-
-                        if (rawDate && rawLink) {
-                            const dateObj = new Date(rawDate);
-                            if (!isNaN(dateObj.getTime())) {
-                                const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-                                const monthYearStr = `${monthNames[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
-                                const imgUrl = convertDriveLink(rawLink);
-
-                                if (!groupedByMonth[monthYearStr]) groupedByMonth[monthYearStr] = [];
-                                groupedByMonth[monthYearStr].push(imgUrl);
-                            }
-                        }
-                    });
-
-                    galleryDataObj = groupedByMonth;
-                    const months = Object.keys(galleryDataObj);
-
-                    if (months.length === 0) {
-                        document.getElementById('gallery-loading').innerHTML = 'Tidak ada data foto yang ditemukan atau format tanggal salah.';
-                        return;
-                    }
-
-                    document.getElementById('gallery-loading').style.display = 'none';
-                    document.getElementById('gallery-carousel').style.display = 'flex';
-
-                    const tabsContainer = document.getElementById('gallery-tabs');
-                    tabsContainer.innerHTML = '';
-                    months.forEach(month => {
-                        const btn = document.createElement('div');
-                        btn.className = 'gallery-tab';
-                        btn.innerText = month;
-                        btn.onclick = () => selectGalleryMonth(month);
-                        tabsContainer.appendChild(btn);
-                    });
-
-                    selectGalleryMonth(months[0]);
-                },
-                error: function(err) {
-                    document.getElementById('gallery-loading').innerHTML = '<span style="color:red;">Gagal memuat data galeri.</span>';
-                }
-            });
-        }
-
-        window.addEventListener('load', () => {
-            initSCurveChart();
-            updateDashboard(CONFIG.DEMO_DATA, false); 
-            setTimeout(fetchDashboardData, 1000); 
-            setTimeout(fetchAndRenderGallery, 1500); 
-        });
-
-    </script>
+    <header>
+        <div class="header-left">
+            <div class="logo-placeholder">HK</div>
+            <div class="project-title">
+                <h1>PROJECT MANAGEMENT INFORMATION SYSTEM</h1>
+                <h2>PROYEK TOL IKN SEGMEN JEMBATAN P. BALANG - SP. RIKO SEKSI 5B</h2>
+            </div>
+        </div>
+        <div class="header-nav">
+            <a href="#">Lean Management</a>
+            <a href="#">Financial Dashboard</a>
+            <a href="#">Risk Management</a>
+            <a href="#">BIM 360</a>
+        </div>
+    </header>
+
+    <div class="sub-nav">
+        <div class="nav-item active" data-panel="home">Home</div>
+        <div class="nav-item" data-panel="monitoring">Progress Monitoring</div>
+        <div class="nav-item" data-panel="visualization">Progress Visualization</div>
+        <div class="nav-item" data-panel="cctv">CCTV</div>
+        <div class="nav-item" data-panel="orgchart">Organization Chart</div>
+        <div class="nav-item" data-panel="projectdata">Project Data</div>
+    </div>
+
+    <div class="content-wrapper">
+        
+        <!-- HOME PANEL -->
+        <div id="home" class="content-panel active">
+            <div class="dashboard-container">
+                
+                <div class="column">
+                    <div class="card">
+                        <div class="card-header">Project Information</div>
+                        <div style="text-align: center; margin: 10px 0;"><strong style="color: #0056b3;">KEMENPU | HK</strong></div>
+                        
+                        <table class="contract-table">
+                            <tr><th>Contract Value</th><th>Contract Duration</th></tr>
+                            <tr><td id="val-contract" class="loading">Memuat...</td><td id="val-duration" class="loading">Memuat...</td></tr>
+                        </table>
+                        
+                        <div class="pm-box">
+                            <div>Project Manager:</div>
+                            <div class="pm-name" id="val-project-manager" class="loading">Memuat...</div>
+                        </div>
+                        
+                        <button class="btn-document">Contract Document</button>
+                        
+                        <div class="countdown-title">Sisa Waktu Pekerjaan</div>
+                        <div id="countdown" class="countdown-box">000 Hari 00:00:00</div>
+                    </div>
+                    
+                    <div class="card card-mini-map">
+                        <div class="mini-map-container">
+                            <iframe id="val-gmaps" src="https://maps.google.com/maps?q=-1.1274,116.6856&z=14&output=embed" allowfullscreen="" loading="lazy"></iframe>
+                        </div>
+                    </div>
+                    
+                    <div class="weather-title" id="weather-city-label">Prakiraan Cuaca</div>
+                    <div class="weather-box" id="weather-container">
+                        <div class="loading" style="width: 100%; color: white;">Memuat cuaca...</div>
+                    </div>
+                </div>
+
+                <div class="center-column">
+                    <div class="map-section">
+                        <div class="map-floating-header">
+                            <span style="color:#e60000; font-weight:bold;">⬅ 3D MAP VIEW</span>
+                            <span>CARTO-GL VOYAGER</span>
+                        </div>
+                        <div id="map"></div>
+                    </div>
+
+                    <div class="bottom-charts-row">
+                        <div class="card progress-summary-card">
+                            <div id="val-month-year" style="font-size: 10px; margin-bottom: 5px;">Progress Summary<br>Memuat...</div>
+                            <div class="circle-progress">
+                                <div class="circle-inner" id="val-progress-summary" class="loading">Memuat...</div>
+                            </div>
+                            <div id="val-plan-dev" style="font-size: 8px; color: #AAA;">Plan: - | Dev: -</div>
+                        </div>
+
+                        <div class="card curve-s-card">
+                            <div class="card-header" style="background:none; text-align:left; margin:0; padding:0;">KURVA S</div>
+                            <div style="position: relative; height: 120px; width: 100%; margin-top: 5px;">
+                                <canvas id="sCurveChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="kpi-column">
+                            <div id="tag-spi" class="kpi-tag" style="background:#666;">SPI<br><span id="val-spi">-</span></div>
+                            <div id="tag-epi" class="kpi-tag" style="background:#666;">EPI<br><span id="val-epi">-</span></div>
+                            <div id="tag-cpi" class="kpi-tag" style="background:#666;">CPI<br><span id="val-cpi">-</span></div>
+                            <div class="performa-box">
+                                <div>PERFORMA</div>
+                                <div id="val-performa" class="warning-banner">MEMUAT...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="column">
+                    <div class="card">
+                        <div class="card-header">Overview Finansial</div>
+                        
+                        <div class="grid-data">
+                            <div><div class="grid-label">HB</div><div class="grid-value red-text" id="val-hb" class="loading">Memuat...</div></div>
+                            <div><div class="grid-label">HPP ARP</div><div class="grid-value" id="val-hpp-arp" class="loading">Memuat...</div></div>
+                            <div><div class="grid-label">Real Progress</div><div class="grid-value red-text" id="val-real-progress" class="loading">Memuat...</div></div>
+                            <div><div class="grid-label">HPP Real</div><div class="grid-value" id="val-hpp-real" class="loading">Memuat...</div></div>
+                        </div>
+
+                        <div style="text-align:center; font-size:10px; margin-bottom:2px;">EAC %</div>
+                        <div class="grid-value" style="text-align:center; margin-bottom:12px;" id="val-eac" class="loading">Memuat...</div>
+
+                        <div class="card-header" style="margin-top:5px;">Solvabilitas</div>
+                        <div class="grid-data">
+                            <div><div class="grid-label">Cash In</div><div class="grid-value red-text" id="val-cash-in" class="loading">Memuat...</div></div>
+                            <div><div class="grid-label">Defisit / Surplus</div><div class="grid-value" id="val-defisit" class="loading">Memuat...</div></div>
+                        </div>
+
+                        <div class="card-header qhsse-header">QHSSE</div>
+                        <div class="qhsse-row">
+                            <div><div class="grid-label">NC</div><div class="qhsse-val" id="val-nc">0</div></div>
+                            <div><div class="grid-label">Nearmiss</div><div class="qhsse-val" id="val-nearmiss">0</div></div>
+                            <div><div class="grid-label">Fatality</div><div class="qhsse-val" id="val-fatality">0</div></div>
+                        </div>
+                    </div>
+
+                    <button class="btn-action">Issue Log & Action Plan</button>
+                    <button class="btn-action">3 Top Risk</button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- PROGRESS MONITORING PANEL -->
+        <div id="monitoring" class="content-panel">
+            <div class="monitoring-container">
+                <div class="maps-row">
+                    <div class="map-card">
+                        <div class="map-card-title">3D Map - Site View Left</div>
+                        <div id="map-monitoring-left" style="width: 100%; height: 100%;"></div>
+                    </div>
+                    <div class="map-card">
+                        <div class="map-card-title">3D Map - Site View Right</div>
+                        <div id="map-monitoring-right" style="width: 100%; height: 100%;"></div>
+                    </div>
+                </div>
+
+                <div class="progress-table-card">
+                    <h3 style="margin-top: 0;">Progress Monitoring Data</h3>
+                    <table class="progress-table">
+                        <thead>
+                            <tr>
+                                <th>Activity</th>
+                                <th>Plan %</th>
+                                <th>Actual %</th>
+                                <th>Deviation</th>
+                                <th>Status</th>
+                                <th>Completion Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="progress-table-body">
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 20px; color: #999;">
+                                    Connect a Power BI or Google Looker data source for live updates
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- PROGRESS VISUALIZATION PANEL -->
+        <div id="visualization" class="content-panel">
+            <div class="slideshow-container">
+                <h3 style="margin-top: 0;">Monthly Documentation Photo Gallery</h3>
+                
+                <div class="slideshow-wrapper">
+                    <div class="slide active">
+                        <div class="slide-placeholder">📸 Photo Month 1</div>
+                    </div>
+                    <div class="slide">
+                        <div class="slide-placeholder">📸 Photo Month 2</div>
+                    </div>
+                    <div class="slide">
+                        <div class="slide-placeholder">📸 Photo Month 3</div>
+                    </div>
+                </div>
+
+                <div class="slide-controls">
+                    <button class="slide-btn" onclick="previousSlide()">⬅ Previous</button>
+                    <div class="slide-counter"><span id="slide-counter">1</span> / <span id="slide-total">3</span></div>
+                    <button class="slide-btn" onclick="nextSlide()">Next ➡</button>
+                </div>
+
+                <div class="slide-thumbnail-list" id="thumbnail-list">
+                    <div class="slide-thumbnail active" onclick="currentSlide(0)">
+                        <div class="slide-placeholder" style="font-size: 12px;">📸</div>
+                    </div>
+                    <div class="slide-thumbnail" onclick="currentSlide(1)">
+                        <div class="slide-placeholder" style="font-size: 12px;">📸</div>
+                    </div>
+                    <div class="slide-thumbnail" onclick="currentSlide(2)">
+                        <div class="slide-placeholder" style="font-size: 12px;">📸</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CCTV PANEL -->
+        <div id="cctv" class="content-panel">
+            <div class="cctv-container">
+                <div class="cctv-card">
+                    <div class="cctv-title">CCTV Camera 1 - Main Gate</div>
+                    <div class="cctv-player">
+                        <iframe src="about:blank"></iframe>
+                    </div>
+                </div>
+                <div class="cctv-card">
+                    <div class="cctv-title">CCTV Camera 2 - Work Site</div>
+                    <div class="cctv-player">
+                        <iframe src="about:blank"></iframe>
+                    </div>
+                </div>
+                <div class="cctv-card">
+                    <div class="cctv-title">CCTV Camera 3 - Bridge Progress</div>
+                    <div class="cctv-player">
+                        <iframe src="about:blank"></iframe>
+                    </div>
+                </div>
+                <div class="cctv-card">
+                    <div class="cctv-title">CCTV Camera 4 - Equipment Area</div>
+                    <div class="cctv-player">
+                        <iframe src="about:blank"></iframe>
+                    </div>
+                </div>
+            </div>
+            <p style="margin-top: 20px; color: #999; text-align: center;">
+                ℹ️ Replace iframe src with actual RTSP stream URLs or HLS streams. Example: rtsp://camera-ip:554/stream or http://camera-ip:8080/stream.m3u8
+            </p>
+        </div>
+
+        <!-- ORGANIZATION CHART PANEL -->
+        <div id="orgchart" class="content-panel">
+            <div class="orgchart-container">
+                <div style="text-align: center;">
+                    <div class="org-box">
+                        <div class="org-title">Project Manager</div>
+                        <div class="org-name" id="org-pm">Daryanto Aloysius</div>
+                    </div>
+                    <div class="org-line"></div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 20px; text-align: center;">
+                    <div>
+                        <div class="org-box">
+                            <div class="org-title">Technical Manager</div>
+                            <div class="org-name">Name TBA</div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="org-box">
+                            <div class="org-title">Financial Manager</div>
+                            <div class="org-name">Name TBA</div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="org-box">
+                            <div class="org-title">Safety Manager</div>
+                            <div class="org-name">Name TBA</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="org-line" style="margin-top: 40px;"></div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 20px; text-align: center;">
+                    <div class="org-box">
+                        <div class="org-title">Site Engineer</div>
+                        <div class="org-name">Name TBA</div>
+                    </div>
+                    <div class="org-box">
+                        <div class="org-title">Quality Control</div>
+                        <div class="org-name">Name TBA</div>
+                    </div>
+                    <div class="org-box">
+                        <div class="org-title">HSE Officer</div>
+                        <div class="org-name">Name TBA</div>
+                    </div>
+                    <div class="org-box">
+                        <div class="org-title">Admin Staff</div>
+                        <div class="org-name">Name TBA</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PROJECT DATA PANEL -->
+        <div id="projectdata" class="content-panel">
+            <div class="project-data-container">
+                <h3 style="margin-top: 0; margin-bottom: 20px;">Project Progress Data Dashboard</h3>
+                
+                <div class="embed-container">
+                    <iframe title="Project Dashboard" 
+                        src="https://app.powerbi.com/reportEmbed?reportId=YOUR_REPORT_ID&groupId=YOUR_GROUP_ID&config=eyJjbHVzdGVyVXJsIjoiaHR0cHM6Ly93YWJpLXNvdXRoLWVhc3QtYXNpYS1hLXByaW1hcnkucmVkaXJlY3QuYXJpLmNvbSIsImVtYmVkRmVhdHVyZXMiOnsibW9kZXJuRW1iZWQiOnRydWV9fQ%3d%3d"
+                        allowFullScreen="true">
+                    </iframe>
+                </div>
+
+                <p style="margin-top: 20px; padding: 12px; background: #FFF3CD; border-radius: 4px; color: #333; font-size: 12px;">
+                    <strong>⚠️ Setup Instructions:</strong><br>
+                    1. Replace the src URL with your actual Power BI report URL or Google Looker dashboard URL<br>
+                    2. For Power BI: Get the embed URL from Power BI service (Publish to web)<br>
+                    3. For Google Looker: Use the embed code provided by your Looker administrator<br>
+                    4. Ensure proper authentication and sharing permissions are set
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="debug-panel" id="debugPanel">
+        <div style="font-weight:bold; border-bottom:1px solid #0f0; margin-bottom:5px;">DIAGNOSTIC PANEL</div>
+    </div>
+
+    <script src="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        // ===== GLOBAL VARIABLES =====
+        let globalMap, mapMonitoringLeft, mapMonitoringRight, sCurveChart;
+        let currentSlideIndex = 1;
+        let countdownState = { intervalId: null, currentTargetDate: null, countdownStarted: false };
+
+        // ===== DEBUG UTILITIES =====
+        const DEBUG = true;
+        const debugPanel = document.getElementById('debugPanel');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            let icon = '📝';
+            let color = '#0f0';
+            if(type === 'error') { icon = '❌'; color = '#f55'; }
+            else if(type === 'warn') { icon = '⚠️'; color = '#fd0'; }
+            else if(type === 'success') { icon = '✅'; color = '#0f0'; }
+            
+            const logEntry = `<div style="color:${color}; margin-bottom:3px;">[${timestamp}] ${icon} ${message}</div>`;
+            console.log(`[${timestamp}] ${type.toUpperCase()}: ${message}`);
+            
+            if (DEBUG) {
+                debugPanel.classList.add('show');
+                debugPanel.innerHTML += logEntry;
+                debugPanel.scrollTop = debugPanel.scrollHeight;
+            }
+        }
+
+        // ===== CONFIGURATION =====
+        const CONFIG = {
+            APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbytNRfyL2vWb_CzK9P4nSaGh0PIiwTOA58f6uOioP_-2rp-LcAAC1YbZ7k3KCCKrjg3/exec',
+            TIMEOUT: 12000, 
+            DEMO_DATA: {
+                ContractValue: 'Rp 500 Miliar', ContractDuration: '24 Bulan',
+                ProjectManager: 'Daryanto Aloysius', StartDate: '2024-01-01', TargetFinish: '2026-12-31', 
+                CityName: 'Balikpapan', Lat: '-1.1274', Long: '116.6856',
+                ProgressSummary: '85.5', ProgressPlan: '92.358', 
+                HB: '92.4%', HPP_ARP: '88.2%', RealProgress: '85.5%', HPP_Real: '87.9%',
+                EAC: '101.2%', CashIn: 'Rp 420 M', DefisitSurplus: 'Rp 80 M', NC: '2', Nearmiss: '5', Fatality: '0',
+                P1: 5, P2: 12, P3: 20, P4: 28, P5: 35, P6: 45, P7: 55, P8: 68, P9: 78, P10: 88, P11: 92.358, P12: 100,
+                A1: 4.5, A2: 10, A3: 18, A4: 25, A5: 32, A6: 40, A7: 50, A8: 65, A9: 75, A10: 85.5
+            }
+        };
+
+        // ===== NAVIGATION & PANEL SWITCHING =====
+        const navItems = document.querySelectorAll('.nav-item');
+        const contentPanels = document.querySelectorAll('.content-panel');
+
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const panelId = item.getAttribute('data-panel');
+                
+                navItems.forEach(nav => nav.classList.remove('active'));
+                item.classList.add('active');
+
+                contentPanels.forEach(panel => panel.classList.remove('active'));
+
+                const selectedPanel = document.getElementById(panelId);
+                if (selectedPanel) {
+                    selectedPanel.classList.add('active');
+                    
+                    setTimeout(() => {
+                        if (globalMap) globalMap.resize();
+                        if (sCurveChart) sCurveChart.resize();
+                        if (mapMonitoringLeft) mapMonitoringLeft.resize();
+                        if (mapMonitoringRight) mapMonitoringRight.resize();
+                    }, 100);
+
+                    if (panelId === 'monitoring') {
+                        initMonitoringMaps();
+                    }
+                }
+            });
+        });
+
+        // ===== SLIDESHOW FUNCTIONS =====
+        function showSlide(n) {
+            const slides = document.querySelectorAll('.slide');
+            if (n > slides.length) currentSlideIndex = 1;
+            if (n < 1) currentSlideIndex = slides.length;
+
+            slides.forEach(slide => slide.classList.remove('active'));
+            if (slides[currentSlideIndex - 1]) {
+                slides[currentSlideIndex - 1].classList.add('active');
+            }
+
+            document.getElementById('slide-counter').textContent = currentSlideIndex;
+
+            const thumbs = document.querySelectorAll('.slide-thumbnail');
+            thumbs.forEach((thumb, index) => {
+                thumb.classList.toggle('active', index === currentSlideIndex - 1);
+            });
+        }
+
+        function nextSlide() {
+            showSlide(++currentSlideIndex);
+        }
+
+        function previousSlide() {
+            showSlide(--currentSlideIndex);
+        }
+
+        function currentSlide(n) {
+            showSlide(currentSlideIndex = n + 1);
+        }
+
+        // ===== MAP INITIALIZATION =====
+        function initMap() {
+            globalMap = new maplibregl.Map({
+                container: 'map',
+                style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json', 
+                center: [116.6856, -1.1274], zoom: 13.5, pitch: 60, bearing: 25, antialias: true
+            });
+        }
+
+        function initMonitoringMaps() {
+            if (mapMonitoringLeft) return;
+
+            mapMonitoringLeft = new maplibregl.Map({
+                container: 'map-monitoring-left',
+                style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json', 
+                center: [116.6800, -1.1300], zoom: 14, pitch: 30, bearing: 0, antialias: true
+            });
+
+            mapMonitoringRight = new maplibregl.Map({
+                container: 'map-monitoring-right',
+                style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json', 
+                center: [116.6900, -1.1250], zoom: 14, pitch: 30, bearing: 45, antialias: true
+            });
+
+            log('✅ Monitoring maps initialized', 'success');
+        }
+
+        window.addEventListener('resize', () => {
+            if (globalMap) globalMap.resize();
+            if (mapMonitoringLeft) mapMonitoringLeft.resize();
+            if (mapMonitoringRight) mapMonitoringRight.resize();
+            if (sCurveChart) sCurveChart.resize();
+        });
+
+        // ===== WEATHER FUNCTIONS =====
+        function getWeatherDetail(code) {
+            if (code === 0) return { icon: '☀️', text: 'Cerah' };
+            if (code === 1 || code === 2 || code === 3) return { icon: '⛅', text: 'Berawan' };
+            if (code === 45 || code === 48) return { icon: '🌫️', text: 'Kabut' };
+            if (code >= 51 && code <= 55) return { icon: '🌧️', text: 'Gerimis' };
+            if (code >= 61 && code <= 65) return { icon: '🌧️', text: 'Hujan' };
+            if (code >= 80 && code <= 82) return { icon: '🌧️', text: 'Hujan' };
+            if (code >= 95 && code <= 99) return { icon: '⛈️', text: 'Badai' };
+            return { icon: '☁️', text: 'Awan' }; 
+        }
+
+        async function updateWeather(cityName) {
+            if (!cityName) return;
+            document.getElementById('weather-city-label').innerText = `Cuaca: ${cityName}`;
+            try {
+                const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1`);
+                const geoData = await geoRes.json();
+                if (!geoData.results || geoData.results.length === 0) {
+                    document.getElementById('weather-container').innerHTML = '<div style="width:100%; color:red;">Kota tidak ditemukan</div>';
+                    return;
+                }
+                const lat = geoData.results[0].latitude, lon = geoData.results[0].longitude;
+                const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,weathercode&timezone=auto`);
+                const weatherData = await weatherRes.json();
+                
+                const days = weatherData.daily.time.slice(0, 5), temps = weatherData.daily.temperature_2m_max.slice(0, 5), codes = weatherData.daily.weathercode.slice(0, 5);
+                const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+                
+                let weatherHTML = '';
+                for(let i=0; i<5; i++) {
+                    const date = new Date(days[i]);
+                    const wDetail = getWeatherDetail(codes[i]);
+                    weatherHTML += `<div class="weather-day-box"><strong>${dayNames[date.getDay()]}</strong><div style="font-size:18px;">${wDetail.icon}</div><div style="font-size:11px;">${Math.round(temps[i])}°C</div></div>`;
+                }
+                document.getElementById('weather-container').innerHTML = weatherHTML;
+            } catch (error) { document.getElementById('weather-container').innerHTML = '<div style="width:100%; color:red;">Gagal memuat cuaca</div>'; }
+        }
+
+        // ===== COUNTDOWN TIMER =====
+        function initCountdown(targetFinishDate = null) {
+            let targetDate = targetFinishDate ? new Date(targetFinishDate) : new Date(new Date().setDate(new Date().getDate() + 226));
+            if (isNaN(targetDate.getTime())) targetDate = new Date(new Date().setDate(new Date().getDate() + 226));
+            
+            targetDate.setHours(23, 59, 59, 999);
+            if (countdownState.countdownStarted && countdownState.currentTargetDate && countdownState.currentTargetDate.getTime() === targetDate.getTime()) return;
+            if (countdownState.intervalId !== null) clearInterval(countdownState.intervalId);
+            
+            countdownState.currentTargetDate = targetDate;
+            countdownState.countdownStarted = true;
+
+            const el = document.getElementById('countdown');
+            function update() {
+                const dist = targetDate.getTime() - new Date().getTime();
+                if (dist < 0) { el.innerHTML = "PROYEK SELESAI"; clearInterval(countdownState.intervalId); countdownState.countdownStarted = false; return; }
+                el.innerHTML = `${String(Math.floor(dist / (1000 * 60 * 60 * 24))).padStart(3, '0')} Hari ${String(Math.floor((dist % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))).padStart(2, '0')}:${String(Math.floor((dist % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0')}:${String(Math.floor((dist % (1000 * 60)) / 1000)).padStart(2, '0')}`;
+            }
+            update();
+            countdownState.intervalId = setInterval(update, 1000);
+        }
+
+        // ===== S-CURVE CHART =====
+        function initSCurveChart() {
+            const ctx = document.getElementById('sCurveChart').getContext('2d');
+            sCurveChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [], 
+                    datasets: [
+                        { label: 'Plan (%)', data: [], borderColor: '#FFC000', backgroundColor: 'rgba(255, 192, 0, 0.1)', borderWidth: 2, tension: 0.4, fill: true, spanGaps: true },
+                        { label: 'Actual (%)', data: [], borderColor: '#00FF00', backgroundColor: 'rgba(0, 255, 0, 0.1)', borderWidth: 2, tension: 0.4, fill: true, spanGaps: true }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: true, labels: { color: 'white', boxWidth: 10, font: { size: 9 } } } },
+                    scales: {
+                        y: { beginAtZero: true, max: 100, ticks: { color: '#AAA', font: { size: 9 }, stepSize: 25 }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                        x: { ticks: { color: '#AAA', font: { size: 9 } }, grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        function updateSCurve(row, isLive) {
+            if (!sCurveChart) return;
+
+            let maxIndex = 0;
+            for(let i = 1; i <= 60; i++) {
+                if(row['P'+i] !== undefined && String(row['P'+i]).trim() !== '') maxIndex = Math.max(maxIndex, i);
+                if(row['A'+i] !== undefined && String(row['A'+i]).trim() !== '') maxIndex = Math.max(maxIndex, i);
+            }
+
+            if (maxIndex === 0 && isLive) {
+                log('❌ Kurva S: P1 s/d P60 dan A1 s/d A60 KOSONG/TIDAK ADA!', 'error');
+                sCurveChart.data.labels = ['Periksa Apps Script Anda'];
+                sCurveChart.data.datasets[0].data = [0];
+                sCurveChart.data.datasets[1].data = [0];
+                sCurveChart.update();
+                return;
+            }
+
+            let startDateRaw = row['STARTDATE'] || row['TGLMULAI'] || row['TANGGALMULAI'];
+            let startDate = new Date(startDateRaw);
+            if (isNaN(startDate.getTime())) startDate = new Date('2024-01-01');
+
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            let labels = [], planData = [], actualData = [];
+
+            for(let i = 1; i <= maxIndex; i++) {
+                let d = new Date(startDate);
+                d.setMonth(d.getMonth() + (i - 1));
+                labels.push(`${monthNames[d.getMonth()]} '${d.getFullYear().toString().slice(-2)}`);
+
+                let pVal = row['P'+i];
+                if(pVal !== undefined && String(pVal).trim() !== '') {
+                    let num = parseFloat(String(pVal).replace(/%/g, '').replace(/,/g, '.').trim());
+                    planData.push(isNaN(num) ? null : num);
+                } else { planData.push(null); }
+
+                let aVal = row['A'+i];
+                if(aVal !== undefined && String(aVal).trim() !== '') {
+                    let num = parseFloat(String(aVal).replace(/%/g, '').replace(/,/g, '.').trim());
+                    actualData.push(isNaN(num) ? null : num);
+                } else { actualData.push(null); }
+            }
+
+            sCurveChart.data.labels = labels;
+            sCurveChart.data.datasets[0].data = planData;
+            sCurveChart.data.datasets[1].data = actualData;
+            sCurveChart.update();
+            log(`✅ Kurva S: Menampilkan ${maxIndex} Bulan`, 'success');
+        }
+
+        // ===== FETCH WITH TIMEOUT =====
+        async function fetchWithTimeout(url, options = {}) {
+            const { timeout = 10000 } = options;
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeout);
+            try {
+                const response = await fetch(url, { ...options, signal: controller.signal, mode: 'cors' });
+                clearTimeout(id); return response;
+            } catch (error) { clearTimeout(id); throw error; }
+        }
+
+        function updateProgressCircle(progressValue, planValue) {
+            let pNum = parseFloat(String(progressValue).replace(/%/g, '').replace(/,/g, '.').trim());
+            let plNum = parseFloat(String(planValue || '0').replace(/%/g, '').replace(/,/g, '.').trim());
+            if (!isNaN(pNum)) {
+                let color = (!isNaN(plNum) && plNum > pNum) ? '#FF0000' : '#00FF00'; 
+                document.querySelector('.circle-progress').style.background = `conic-gradient(${color} ${(pNum / 100) * 360}deg, #444 0deg)`;
+            }
+        }
+
+        async function fetchDashboardData() {
+            log('🚀 Menarik data LIVE dari Spreadsheet...', 'info');
+            try {
+                const response = await fetchWithTimeout(CONFIG.APPS_SCRIPT_URL, { timeout: CONFIG.TIMEOUT });
+                if (!response.ok) throw new Error(`HTTP Error`);
+                const data = await response.json();
+                
+                if (data && Array.isArray(data) && data.length > 0) updateDashboard(data[0], true);
+                else if (data && typeof data === 'object') updateDashboard(data, true);
+                else throw new Error('Format Data Tidak Dikenali');
+            } catch (error) {
+                log(`❌ Fetch Live Gagal. Menggunakan Data Demo...`, 'error');
+                updateDashboard(CONFIG.DEMO_DATA, false);
+            }
+        }
+
+        function updateDashboard(rawRow, isLive = false) {
+            try {
+                const row = {};
+                for (let key in rawRow) {
+                    if (rawRow.hasOwnProperty(key)) {
+                        let cleanKey = String(key).toUpperCase().replace(/[^A-Z0-9]/g, '');
+                        row[cleanKey] = rawRow[key];
+                    }
+                }
+
+                if (isLive) {
+                    log(`Data diterima. Jumlah kolom: ${Object.keys(row).length}`, 'info');
+                    console.log("DAFTAR KOLOM TERBACA DARI SPREADSHEET:", Object.keys(row));
+                }
+
+                const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+                const today = new Date();
+                document.getElementById('val-month-year').innerHTML = `Progress Summary<br>${monthNames[today.getMonth()]} ${today.getFullYear()}`;
+
+                const fieldsToUpdate = {
+                    'val-contract': 'CONTRACTVALUE', 'val-duration': 'CONTRACTDURATION',
+                    'val-project-manager': 'PROJECTMANAGER', 'val-progress-summary': 'PROGRESSSUMMARY',
+                    'val-hb': 'HB', 'val-hpp-arp': 'HPPARP', 'val-real-progress': 'REALPROGRESS',
+                    'val-hpp-real': 'HPPREAL', 'val-eac': 'EAC', 'val-cash-in': 'CASHIN',
+                    'val-defisit': 'DEFISITSURPLUS', 'val-nc': 'NC', 'val-nearmiss': 'NEARMISS', 'val-fatality': 'FATALITY'
+                };
+
+                for (const [elementId, dataKey] of Object.entries(fieldsToUpdate)) {
+                    const el = document.getElementById(elementId);
+                    if (el && row[dataKey] !== undefined) {
+                        let val = row[dataKey];
+                        if (dataKey === 'PROGRESSSUMMARY' && !String(val).includes('%')) val = `${val}%`;
+                        el.innerText = val;
+                        el.classList.remove('loading', 'error');
+                    }
+                }
+
+                const parseToNum = (val) => parseFloat(String(val || '0').replace(/%/g, '').replace(/,/g, '.').trim()) || 0;
+                let actSummary = parseToNum(row['PROGRESSSUMMARY']);
+                let planSummary = parseToNum(row['PROGRESSPLAN']);
+                let hppReal = parseToNum(row['HPPREAL']);
+                let hppArp = parseToNum(row['HPPARP']);
+
+                let spi = planSummary !== 0 ? (actSummary / planSummary) : 0;
+                let epi = hppArp !== 0 ? (hppArp / hppReal) : 0;
+                let cpi = hppReal !== 0 ? ((1 / hppReal) * 100) : 0;
+
+                document.getElementById('val-spi').innerText = spi.toFixed(2);
+                document.getElementById('tag-spi').style.background = spi < 1 ? 'red' : 'green';
+                document.getElementById('val-epi').innerText = epi.toFixed(2);
+                document.getElementById('tag-epi').style.background = epi < 1 ? 'red' : 'green';
+                document.getElementById('val-cpi').innerText = cpi.toFixed(2);
+                document.getElementById('tag-cpi').style.background = cpi < 1 ? 'red' : 'green';
+
+                let pBanner = document.getElementById('val-performa');
+                if (spi >= 1 && epi >= 1 && cpi >= 1) { pBanner.innerText = 'EXCELLENT'; pBanner.style.background = 'green'; pBanner.style.color = 'white'; }
+                else if (spi < 1 && epi < 1 && cpi < 1) { pBanner.innerText = 'CRITICAL'; pBanner.style.background = 'red'; pBanner.style.color = 'white'; }
+                else { pBanner.innerText = 'WARNING'; pBanner.style.background = '#FFFF00'; pBanner.style.color = 'black'; }
+
+                if (row['PROGRESSSUMMARY'] !== undefined && row['PROGRESSPLAN'] !== undefined) {
+                    updateProgressCircle(row['PROGRESSSUMMARY'], row['PROGRESSPLAN']);
+                    let devVal = actSummary - planSummary;
+                    let pText = String(row['PROGRESSPLAN']).includes('%') ? row['PROGRESSPLAN'] : `${row['PROGRESSPLAN']}%`;
+                    document.getElementById('val-plan-dev').innerText = `Plan: ${pText} | Dev: ${devVal > 0 ? '+' : ''}${devVal.toFixed(3)}%`;
+                }
+
+                updateSCurve(row, isLive);
+
+                if (row['CITYNAME'] || row['KOTA']) updateWeather(row['CITYNAME'] || row['KOTA']);
+                if (row['TARGETFINISH']) initCountdown(row['TARGETFINISH']);
+                
+                let lat = row['LAT'] || row['LATITUDE'];
+                let long = row['LONG'] || row['LONGITUDE'];
+                if (lat !== undefined && long !== undefined) {
+                    const gIframe = document.getElementById('val-gmaps');
+                    if (gIframe) {
+                        gIframe.src = `https://maps.google.com/maps?q=${lat},${long}&z=14&output=embed`;
+                        log(`✅ GMaps diupdate ke Lat: ${lat}, Long: ${long}`, 'success');
+                    }
+                }
+            } catch (error) { log(`Dashboard error: ${error.message}`, 'error'); }
+        }
+
+        // ===== INITIALIZATION =====
+        window.addEventListener('load', () => {
+            initMap();
+            initSCurveChart();
+            updateDashboard(CONFIG.DEMO_DATA, false); 
+            setTimeout(fetchDashboardData, 1000);
+            showSlide(currentSlideIndex); // Initialize slideshow
+        });
+
+    </script>
 </body>
 </html>
